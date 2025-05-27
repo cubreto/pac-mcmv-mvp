@@ -1,0 +1,10 @@
+data/*.xlsx
+data/*.xls  
+data/*.csv
+__pycache__/
+*.pyc
+.DS_Store
+.env
+.vscode/
+.idea/
+postgres_data/
