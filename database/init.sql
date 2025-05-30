@@ -1,70 +1,55 @@
--- PAC-MCMV Unified Database Schema
--- Single table strategy for MVP simplicity
+-- PAC-MCMV Database Initialization
+-- Updated for REUNI data structure
 
-CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+-- Create tables (will be created by migration script)
+-- This file now just creates views for the dashboards
 
--- Unified project status table
-CREATE TABLE IF NOT EXISTS projeto_status (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    
-    -- Basic project info
-    proposta VARCHAR(100),
-    uf CHAR(2) NOT NULL,
-    municipio_beneficiado VARCHAR(255),
-    
-    -- Program identification
-    programa VARCHAR(255) NOT NULL,
-    tipo_programa VARCHAR(20) CHECK (tipo_programa IN ('PAC', 'HABITACAO')),
-    
-    -- Financial data
-    valor_repasse DECIMAL(15,2),
-    valor_investimento DECIMAL(15,2),
-    valor_empenhado DECIMAL(15,2),
-    valor_pago DECIMAL(15,2),
-    
-    -- Progress tracking
-    percentual_obra_realizado DECIMAL(5,2),
-    data_inicio_obra DATE,
-    
-    -- Key field for analysis
-    situacao_atual TEXT NOT NULL,
-    data_atualizacao_situacao DATE,
-    
-    -- Metadata
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    
-    -- Indexes for performance
-    CONSTRAINT valid_percentage CHECK (percentual_obra_realizado >= 0 AND percentual_obra_realizado <= 100)
-);
+-- View for dashboard summary (Q2: Suspensiva Analysis)
+CREATE OR REPLACE VIEW suspensiva_funnel AS
+SELECT 
+    situacao_analise_suspensiva,
+    COUNT(*) as total,
+    ROUND(COUNT(*) * 100.0 / SUM(COUNT(*)) OVER (), 2) as percentual
+FROM pac_operations
+WHERE situacao_proposta = 'em execucao'
+GROUP BY situacao_analise_suspensiva
+ORDER BY total DESC;
 
--- Indexes for common queries
-CREATE INDEX idx_projeto_uf ON projeto_status(uf);
-CREATE INDEX idx_projeto_programa ON projeto_status(programa);
-CREATE INDEX idx_projeto_tipo ON projeto_status(tipo_programa);
-CREATE INDEX idx_situacao_text ON projeto_status USING gin(to_tsvector('portuguese', situacao_atual));
+-- View for licitação funnel (Q3: Bidding Analysis)
+CREATE OR REPLACE VIEW licitacao_funnel AS
+SELECT 
+    CASE 
+        WHEN situacao_analise_vrpl = 'VRPL Emitida' THEN '4. VRPL Emitida'
+        WHEN data_publicacao_edital IS NOT NULL THEN '3. Edital Publicado'
+        WHEN situacao_ail LIKE '%Autorização Encaminhada%' THEN '2. AIL Autorizada'
+        ELSE '1. Aguardando AIL'
+    END as etapa_licitacao,
+    COUNT(*) as total
+FROM pac_operations
+GROUP BY etapa_licitacao
+ORDER BY etapa_licitacao;
 
--- View for dashboard queries (optional optimization)
-CREATE OR REPLACE VIEW dashboard_summary AS
+-- View for regional analysis (Q4: Regional Performance)
+CREATE OR REPLACE VIEW regional_summary AS
 SELECT 
     uf,
-    tipo_programa,
-    COUNT(*) as total_projetos,
-    SUM(valor_repasse) as valor_total,
-    AVG(percentual_obra_realizado) as progresso_medio,
-    COUNT(CASE WHEN situacao_atual ~* 'atras|problem|pendente|paralis' THEN 1 END) as projetos_problema
-FROM projeto_status 
-GROUP BY uf, tipo_programa;
+    COUNT(*) as total_operacoes,
+    SUM(valor_repasse_centavos) / 100.0 as valor_total_repasse,
+    AVG(percentual_realizado_reuni) as percentual_medio_execucao,
+    COUNT(CASE WHEN percentual_realizado_reuni < 50 THEN 1 END) as operacoes_baixa_execucao
+FROM pac_operations
+GROUP BY uf
+ORDER BY total_operacoes DESC;
 
--- Update trigger for metadata
-CREATE OR REPLACE FUNCTION update_modified_column()
-RETURNS TRIGGER AS $$
-BEGIN
-    NEW.updated_at = CURRENT_TIMESTAMP;
-    RETURN NEW;
-END;
-$$ language 'plpgsql';
-
-CREATE TRIGGER update_projeto_status_modtime 
-    BEFORE UPDATE ON projeto_status 
-    FOR EACH ROW EXECUTE FUNCTION update_modified_column();
+-- View for overall dashboard metrics
+CREATE OR REPLACE VIEW dashboard_metrics AS
+SELECT 
+    COUNT(*) as total_operacoes,
+    COUNT(DISTINCT uf) as total_estados,
+    COUNT(DISTINCT municipio_beneficiado) as total_municipios,
+    SUM(valor_repasse_centavos) / 100.0 as valor_total_repasse,
+    SUM(valor_investimento_centavos) / 100.0 as valor_total_investimento,
+    AVG(percentual_realizado_reuni) as percentual_medio_execucao,
+    COUNT(CASE WHEN situacao_analise_suspensiva = 'Suspensiva retirada' THEN 1 END) as suspensivas_retiradas,
+    COUNT(CASE WHEN data_publicacao_edital IS NOT NULL THEN 1 END) as licitacoes_publicadas
+FROM pac_operations;
