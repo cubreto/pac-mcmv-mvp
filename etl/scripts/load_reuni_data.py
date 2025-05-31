@@ -1,16 +1,14 @@
 """
-ETL Script to load REUNI Excel data into PostgreSQL
-Based on analysis of 4,899 records with 78 columns
+ETL script to load REUNI Excel data into PostgreSQL
 """
 import pandas as pd
 import numpy as np
-from datetime import datetime
+from sqlalchemy import create_engine, text
 import logging
-from sqlalchemy import create_engine
+from datetime import datetime
 import os
-from decimal import Decimal
 
-# Set up logging
+# Configure logging
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
@@ -18,215 +16,185 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 class ReuniETL:
-    def __init__(self, excel_path, db_url=None):
+    def __init__(self, excel_path, db_url):
         self.excel_path = excel_path
-        self.db_url = db_url or os.getenv('DATABASE_URL')
+        self.db_url = db_url
         self.engine = None
         
     def connect_db(self):
-        """Create database connection"""
+        """Connect to PostgreSQL database"""
         try:
             self.engine = create_engine(self.db_url)
+            # Test connection
+            with self.engine.connect() as conn:
+                conn.execute(text("SELECT 1"))
             logger.info("✅ Connected to database")
             return True
         except Exception as e:
-            logger.error(f"❌ Database connection failed: {e}")
+            logger.error(f"❌ Failed to connect to database: {e}")
             return False
     
     def load_excel(self):
-        """Load and validate Excel file"""
+        """Load Excel file into pandas DataFrame"""
         try:
             logger.info(f"📂 Loading Excel file: {self.excel_path}")
-            df = pd.read_excel(self.excel_path)
+            df = pd.read_excel(self.excel_path, engine='openpyxl')
             logger.info(f"✅ Loaded {len(df)} records with {len(df.columns)} columns")
             return df
         except Exception as e:
             logger.error(f"❌ Failed to load Excel: {e}")
             return None
     
-    def clean_column_names(self, df):
+    def standardize_column_names(self, df):
         """Standardize column names for PostgreSQL"""
         column_mapping = {
-            'Proposta': 'proposta',
-            'Operação': 'operacao',
-            'DV': 'dv',
-            'Instrumento': 'instrumento',
-            'Recebedor': 'recebedor',
-            'Ente de vinculação': 'ente_vinculacao',
+            'ID_OPERAÇÃO': 'id_operacao',
             'UF': 'uf',
-            'Município Beneficiado': 'municipio_beneficiado',
-            'GIGOV/REGOV': 'gigov_regov',
-            'GIGOV de Vinculação': 'gigov_vinculacao',
-            'Repassador': 'repassador',
-            'Programa': 'programa',
-            'Objetivo': 'objetivo',
-            'Latitude': 'latitude',
-            'Longitude': 'longitude',
-            'Tipo': 'tipo',
-            'Tipologia': 'tipologia',
-            'Situação do Termo de Compromisso': 'situacao_termo_compromisso',
-            'Situação da Proposta': 'situacao_proposta',
-            'Regime Simplificado': 'regime_simplificado',
-            'Valor Repasse': 'valor_repasse',
-            'Valor Investimento': 'valor_investimento',
-            'Valor Empenhado': 'valor_empenhado',
-            'Valor Pago C.Convênio': 'valor_pago_convenio',
-            'Valor Desbloqueado': 'valor_desbloqueado',
-            'Ação Orçamentária': 'acao_orcamentaria',
-            'Envio para CAIXA': 'envio_para_caixa',
-            'PT em Complementação': 'pt_em_complementacao',
-            'PT em Análise': 'pt_em_analise',
-            'PT Aprovado': 'pt_aprovado',
-            'Emissão Empenho': 'emissao_empenho',
-            'TC Assinado': 'tc_assinado',
-            'Vencimento da Suspensiva': 'vencimento_suspensiva',
-            'Classificação Suspensiva': 'classificacao_suspensiva',
-            'Suspensiva': 'suspensiva',
-            'Data Cumprimento Suspensiva': 'data_cumprimento_suspensiva',
-            'Último Envio Suspensiva (dentro do prazo contratual)': 'ultimo_envio_suspensiva_prazo',
-            'Último Envio Suspensiva': 'ultimo_envio_suspensiva',
-            'Última Evolução Suspensiva': 'ultima_evolucao_suspensiva',
-            'Dias sem movimentação': 'dias_sem_movimentacao',
-            'Prazo Suspensiva Contratual': 'prazo_suspensiva_contratual',
-            'Limite para retirada da suspensiva (90 dias)': 'limite_retirada_suspensiva_90',
-            'Limite para retirada da suspensiva (prorrogação 30 dias)': 'limite_retirada_suspensiva_prorrogacao',
-            'Prazo para retirada da suspensiva (dias)': 'prazo_retirada_suspensiva_dias',
-            'Data Retirada Suspensiva': 'data_retirada_suspensiva',
-            'Qd.Complementações de Suspensiva': 'qd_complementacoes_suspensiva',
-            'Situação da Análise Suspensiva': 'situacao_analise_suspensiva',
-            'Situação da AIL': 'situacao_ail',
-            'Data solicitação AIL ao Repassador': 'data_solicitacao_ail_repassador',
-            'Data recebimento retorno AIL pelo Repassador': 'data_recebimento_retorno_ail',
-            'Data envio da AIL ao Recebedor': 'data_envio_ail_recebedor',
-            'Data Previsão Publicação Edital Licitação': 'data_previsao_publicacao_edital',
-            'Data Publicação Edital Licitação': 'data_publicacao_edital',
-            'Primeiro Envio da Licitação': 'primeiro_envio_licitacao',
-            'Último Envio da Licitação': 'ultimo_envio_licitacao',
-            'Situação da Análise VRPL': 'situacao_analise_vrpl',
-            'Dias sem movimentação VRPL': 'dias_sem_movimentacao_vrpl',
-            'Data Conclusão Análise VRPL': 'data_conclusao_analise_vrpl',
-            'Data Aceite VRPL': 'data_aceite_vrpl',
-            'Data Última Movimentação VRPL': 'data_ultima_movimentacao_vrpl',
-            'Data Homologação Licitação': 'data_homologacao_licitacao',
-            'Data Previsão Ordem Serviço': 'data_previsao_ordem_servico',
-            'Data Emissão Ordem Serviço': 'data_emissao_ordem_servico',
-            'Data Previsão Início de Obra': 'data_previsao_inicio_obra',
-            'Data Início de Obra (TGov)': 'data_inicio_obra_tgov',
-            'Data Último BM (TGOV)': 'data_ultimo_bm_tgov',
-            'Data Último BM (REUNI)': 'data_ultimo_bm_reuni',
-            'Percentual informado (REUNI)': 'percentual_informado_reuni',
-            'Percentual informado (TGov)': 'percentual_informado_tgov',
-            'Percentual realizado (REUNI)': 'percentual_realizado_reuni',
-            'Percentual realizado (TGov)': 'percentual_realizado_tgov',
-            'Valor Informado no último BM (TGov)': 'valor_informado_ultimo_bm_tgov',
-            'Valor Informado no último BM (REUNI)': 'valor_informado_ultimo_bm_reuni',
-            'Execução por Etapas': 'execucao_por_etapas',
-            'Etiquetas': 'etiquetas',
-            'Situação Atual': 'situacao_atual',
-            'Data atualização da Situação Atual': 'data_atualizacao_situacao_atual',
-            'Data Atualização': 'data_atualizacao'
+            'SIGLA_UF': 'sigla_uf',
+            'MUNICÍPIO_BENEFICIADO': 'municipio_beneficiado',
+            'COD_IBGE': 'cod_ibge',
+            'TIPO_DE_OBRA': 'tipo_de_obra',
+            'EMPREENDIMENTO': 'empreendimento',
+            'ÁREA/SETOR': 'area_setor',
+            'OBSERVAÇÕES': 'observacoes',
+            'ORIGEM_DO_RECURSO': 'origem_do_recurso',
+            'NÚMERO_DO_CONTRATO': 'numero_do_contrato',
+            'PROPONENTE': 'proponente',
+            'MODALIDADE': 'modalidade',
+            'SELEÇÃO': 'selecao',
+            'EXECUTOR': 'executor',
+            'CNPJ_PROPONENTE': 'cnpj_proponente',
+            'DATA_DE_SELEÇÃO': 'data_de_selecao',
+            'VALOR_DE_REPASSE': 'valor_repasse',
+            'VALOR_DE_CONTRAPARTIDA': 'valor_contrapartida',
+            'VALOR_DE_INVESTIMENTO': 'valor_investimento',
+            'DATA_BASE': 'data_base',
+            'CATEGORIA': 'categoria',
+            'EXECUÇÃO_POR_ETAPAS': 'execucao_por_etapas',
+            'ETAPA': 'etapa',
+            'PROGRAMA': 'programa',
+            'AÇÃO': 'acao',
+            'MINISTÉRIO': 'ministerio',
+            'VALOR_CONTRATADO': 'valor_contratado',
+            'DATA_ASSINATURA': 'data_assinatura',
+            'DATA_INÍCIO_VIGÊNCIA': 'data_inicio_vigencia',
+            'DATA_FIM_VIGÊNCIA': 'data_fim_vigencia',
+            'SITUAÇÃO_DA_OPERAÇÃO': 'situacao_da_operacao',
+            'ESTÁGIO': 'estagio',
+            '%_DE_EXECUÇÃO': 'percentual_execucao',
+            'VALOR_DESBLOQUEADO': 'valor_desbloqueado',
+            'VALOR_DESEMBOLSADO': 'valor_desembolsado',
+            'DATA_DO_ÚLTIMO_DESBLOQUEIO': 'data_ultimo_desbloqueio',
+            'DATA_DO_ÚLTIMO_DESEMBOLSO': 'data_ultimo_desembolso',
+            'PROVIDÊNCIA_TÉCNICA': 'providencia_tecnica',
+            'DESCRIÇÃO_PROVIDÊNCIA_TÉCNICA': 'descricao_providencia_tecnica',
+            'DATA_PROVIDÊNCIA_TÉCNICA': 'data_providencia_tecnica',
+            'PRAZO_PROVIDÊNCIA_TÉCNICA': 'prazo_providencia_tecnica',
+            'RESTRIÇÃO': 'restricao',
+            'CATEGORIA_RESTRIÇÃO': 'categoria_restricao',
+            'RESPONSÁVEL_PELA_RESTRIÇÃO': 'responsavel_pela_restricao',
+            'DESCRIÇÃO_RESTRIÇÃO': 'descricao_restricao',
+            'DATA_INCLUSÃO_RESTRIÇÃO': 'data_inclusao_restricao',
+            'PRAZO_RESTRIÇÃO': 'prazo_restricao'
         }
         
-        df.rename(columns=column_mapping, inplace=True)
+        # Rename columns
+        df = df.rename(columns=column_mapping)
+        
+        # Handle any remaining columns not in mapping
+        df.columns = [col.lower().replace(' ', '_').replace('/', '_').replace('ç', 'c').replace('ã', 'a').replace('õ', 'o').replace('á', 'a').replace('é', 'e').replace('í', 'i').replace('ó', 'o').replace('ú', 'u').replace('â', 'a').replace('ê', 'e').replace('ô', 'o').replace('à', 'a').replace('ü', 'u') for col in df.columns]
+        
         logger.info("✅ Column names standardized")
         return df
     
     def transform_data(self, df):
-        """Transform data types and clean values"""
-        
-        # Convert money values to centavos (integer)
-        money_columns = [
-            'valor_repasse', 'valor_investimento', 'valor_empenhado',
-            'valor_pago_convenio', 'valor_desbloqueado',
-            'valor_informado_ultimo_bm_tgov', 'valor_informado_ultimo_bm_reuni'
-        ]
-        
-        for col in money_columns:
-            if col in df.columns:
-                # Convert to centavos to avoid floating point issues
-                df[f'{col}_centavos'] = (df[col] * 100).fillna(0).astype('int64')
-                df.drop(columns=[col], inplace=True)
-        
-        # Convert boolean fields
-        if 'execucao_por_etapas' in df.columns:
-            df['execucao_por_etapas'] = df['execucao_por_etapas'].map({'Sim': True, 'Não': False}).fillna(False)
-        
-        # Ensure proposta is string and not null
-        df['proposta'] = df['proposta'].astype(str)
-        
-        # Handle numeric columns
-        numeric_cols = ['operacao', 'dv', 'instrumento', 'dias_sem_movimentacao', 
-                       'qd_complementacoes_suspensiva', 'dias_sem_movimentacao_vrpl',
-                       'prazo_retirada_suspensiva_dias']
-        
-        for col in numeric_cols:
-            if col in df.columns:
-                df[col] = pd.to_numeric(df[col], errors='coerce')
-        
-        # Clean percentage fields
-        pct_cols = ['percentual_informado_reuni', 'percentual_informado_tgov',
-                   'percentual_realizado_reuni', 'percentual_realizado_tgov']
-        
-        for col in pct_cols:
-            if col in df.columns:
-                df[col] = pd.to_numeric(df[col], errors='coerce')
-                df[col] = df[col].fillna(0.0)
-        
-        logger.info("✅ Data transformed")
-        return df
-    
-    def load_to_database(self, df):
-        """Load data to PostgreSQL"""
+        """Transform data types and clean data"""
         try:
-            # Select only columns that exist in our schema
-            columns_to_load = [col for col in df.columns if col in [
-                'proposta', 'operacao', 'dv', 'instrumento', 'recebedor',
-                'ente_vinculacao', 'uf', 'municipio_beneficiado', 'gigov_regov',
-                'gigov_vinculacao', 'repassador', 'programa', 'objetivo',
-                'latitude', 'longitude', 'tipo', 'tipologia',
-                'situacao_termo_compromisso', 'situacao_proposta', 'regime_simplificado',
-                'valor_repasse_centavos', 'valor_investimento_centavos',
-                'valor_empenhado_centavos', 'valor_pago_convenio_centavos',
-                'valor_desbloqueado_centavos', 'envio_para_caixa',
-                'pt_em_complementacao', 'pt_em_analise', 'pt_aprovado',
-                'emissao_empenho', 'tc_assinado', 'vencimento_suspensiva',
-                'classificacao_suspensiva', 'suspensiva', 'data_cumprimento_suspensiva',
-                'ultimo_envio_suspensiva_prazo', 'ultimo_envio_suspensiva',
-                'ultima_evolucao_suspensiva', 'dias_sem_movimentacao',
-                'prazo_suspensiva_contratual', 'limite_retirada_suspensiva_90',
-                'limite_retirada_suspensiva_prorrogacao', 'prazo_retirada_suspensiva_dias',
-                'data_retirada_suspensiva', 'qd_complementacoes_suspensiva',
-                'situacao_analise_suspensiva', 'situacao_ail',
-                'data_solicitacao_ail_repassador', 'data_recebimento_retorno_ail',
-                'data_envio_ail_recebedor', 'data_previsao_publicacao_edital',
-                'data_publicacao_edital', 'primeiro_envio_licitacao',
-                'ultimo_envio_licitacao', 'situacao_analise_vrpl',
-                'dias_sem_movimentacao_vrpl', 'data_conclusao_analise_vrpl',
-                'data_aceite_vrpl', 'data_ultima_movimentacao_vrpl',
-                'data_homologacao_licitacao', 'data_previsao_ordem_servico',
-                'data_emissao_ordem_servico', 'data_previsao_inicio_obra',
-                'data_inicio_obra_tgov', 'data_ultimo_bm_tgov',
-                'data_ultimo_bm_reuni', 'percentual_informado_reuni',
-                'percentual_informado_tgov', 'percentual_realizado_reuni',
-                'percentual_realizado_tgov', 'valor_informado_ultimo_bm_tgov_centavos',
-                'valor_informado_ultimo_bm_reuni_centavos', 'execucao_por_etapas',
-                'etiquetas', 'situacao_atual', 'data_atualizacao_situacao_atual',
-                'data_atualizacao'
-            ]]
+            # Convert money columns to centavos (integer)
+            money_columns = [
+                'valor_repasse', 'valor_contrapartida', 'valor_investimento',
+                'valor_contratado', 'valor_desbloqueado', 'valor_desembolsado'
+            ]
             
-            df_to_load = df[columns_to_load].copy()
+            for col in money_columns:
+                if col in df.columns:
+                    # Convert to float, multiply by 100, then to integer
+                    df[col + '_centavos'] = pd.to_numeric(df[col], errors='coerce').fillna(0) * 100
+                    df[col + '_centavos'] = df[col + '_centavos'].astype('int64')
+                    df.drop(columns=[col], inplace=True)
             
-            # Load to database
-            df_to_load.to_sql(
+            # Convert date columns
+            date_columns = [
+                'data_de_selecao', 'data_base', 'data_assinatura',
+                'data_inicio_vigencia', 'data_fim_vigencia',
+                'data_ultimo_desbloqueio', 'data_ultimo_desembolso',
+                'data_providencia_tecnica', 'data_inclusao_restricao'
+            ]
+            
+            for col in date_columns:
+                if col in df.columns:
+                    df[col] = pd.to_datetime(df[col], errors='coerce')
+            
+            # Convert percentage column
+            if 'percentual_execucao' in df.columns:
+                df['percentual_execucao'] = pd.to_numeric(df['percentual_execucao'], errors='coerce')
+            
+            # Convert boolean
+            if 'execucao_por_etapas' in df.columns:
+                df['execucao_por_etapas'] = df['execucao_por_etapas'].map({'Sim': True, 'Não': False}).fillna(False)
+            
+            # Add ETL metadata
+            df['etl_loaded_at'] = datetime.now()
+            df['etl_source_file'] = os.path.basename(self.excel_path)
+            
+            logger.info("✅ Data transformed")
+            return df
+            
+        except Exception as e:
+            logger.error(f"❌ Failed to transform data: {e}")
+            return None
+    
+    def load_to_db(self, df):
+        """Load DataFrame to PostgreSQL"""
+        try:
+            # Use TRUNCATE CASCADE to handle foreign keys
+            with self.engine.connect() as conn:
+                conn.execute(text("TRUNCATE TABLE pac_operations CASCADE"))
+                conn.commit()
+            
+            # Load data
+            df.to_sql(
                 'pac_operations',
                 self.engine,
-                if_exists='replace',
+                if_exists='append',  # Use append since we truncated
                 index=False,
-                method='multi',
-                chunksize=500
+                chunksize=1000
             )
             
-            logger.info(f"✅ Loaded {len(df_to_load)} records to database")
+            logger.info(f"✅ Loaded {len(df)} records to database")
+            
+            # Record load history if table exists
+            try:
+                with self.engine.connect() as conn:
+                    conn.execute(
+                        text("""
+                        INSERT INTO etl_load_history (
+                            source_file, records_loaded, load_status, load_timestamp
+                        ) VALUES (
+                            :source_file, :records_loaded, 'success', :timestamp
+                        )
+                        """),
+                        {
+                            'source_file': os.path.basename(self.excel_path),
+                            'records_loaded': len(df),
+                            'timestamp': datetime.now()
+                        }
+                    )
+                    conn.commit()
+            except:
+                # If etl_load_history doesn't exist, skip it
+                pass
+            
             return True
             
         except Exception as e:
@@ -234,43 +202,33 @@ class ReuniETL:
             return False
     
     def run(self):
-        """Execute the complete ETL pipeline"""
+        """Run the complete ETL pipeline"""
         logger.info("🚀 Starting REUNI ETL Pipeline")
         
         # Connect to database
         if not self.connect_db():
+            logger.error("💥 ETL Pipeline failed!")
             return False
         
         # Load Excel
         df = self.load_excel()
         if df is None:
+            logger.error("💥 ETL Pipeline failed!")
             return False
         
-        # Clean column names
-        df = self.clean_column_names(df)
+        # Standardize column names
+        df = self.standardize_column_names(df)
         
         # Transform data
         df = self.transform_data(df)
+        if df is None:
+            logger.error("💥 ETL Pipeline failed!")
+            return False
         
         # Load to database
-        success = self.load_to_database(df)
-        
-        if success:
-            logger.info("🎉 ETL Pipeline completed successfully!")
-        else:
+        if not self.load_to_db(df):
             logger.error("💥 ETL Pipeline failed!")
-            
-        return success
-
-
-if __name__ == "__main__":
-    import argparse
-    
-    parser = argparse.ArgumentParser(description='Load REUNI Excel data to PostgreSQL')
-    parser.add_argument('excel_path', help='Path to REUNI Excel file')
-    parser.add_argument('--db-url', help='Database URL (or set DATABASE_URL env var)')
-    
-    args = parser.parse_args()
-    
-    etl = ReuniETL(args.excel_path, args.db_url)
-    etl.run()
+            return False
+        
+        logger.info("🎉 ETL Pipeline completed successfully!")
+        return True
