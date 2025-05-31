@@ -1,20 +1,38 @@
+version: '3.8'
+
 services:
   db:
-    image: postgres:15
-    container_name: pac-mcmv-postgres
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_USER: pac_user
+      POSTGRES_PASSWORD: pac_password
+      POSTGRES_DB: pac_mcmv
     ports:
       - "5432:5432"
-    environment:
-      POSTGRES_DB: pac_mcmv
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres123
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      - ./database/migrations:/docker-entrypoint-initdb.d
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
-      interval: 10s
+      test: ["CMD-SHELL", "pg_isready -U pac_user"]
+      interval: 5s
       timeout: 5s
       retries: 5
+
+  app:
+    build: .
+    ports:
+      - "8501:8501"
+      - "8502:8502"
+    volumes:
+      - ./streamlit_app:/app
+      - ./data:/data
+      - ./etl:/etl
+    environment:
+      - DATABASE_URL=postgresql://pac_user:pac_password@db:5432/pac_mcmv
+    depends_on:
+      db:
+        condition: service_healthy
+    command: streamlit run /app/dashboard_v2.py --server.port 8501 --server.address 0.0.0.0
 
 volumes:
   postgres_data:
