@@ -2,6 +2,7 @@
 """
 PAC-MCMV Dashboard V2 - Real CAIXA Data Integration
 Implements requirements from CAIXA meeting for analyzing suspensivas and delays
+Now includes MCMV Rural integration
 """
 
 import streamlit as st
@@ -12,9 +13,17 @@ from datetime import datetime, timedelta
 import numpy as np
 from sqlalchemy import create_engine, text
 import os
+import sys
+from pathlib import Path
+
+# Add project root to path for imports
+sys.path.append(str(Path(__file__).parent.parent))
 
 # Import existing text analyzer
-from text_analyzer import analyze_situacao_texts, detect_delays, categorize_problems
+from streamlit_app.text_analyzer import analyze_situacao_texts, detect_delays, categorize_problems
+
+# Import MCMV components
+from etl.mcmv.rural_loader import load_rural_data
 
 # Page config
 st.set_page_config(
@@ -126,6 +135,17 @@ def load_pac_operations():
     
     return df
 
+@st.cache_data(ttl=300)
+def load_mcmv_rural_data():
+    """Load MCMV Rural data"""
+    try:
+        data = load_rural_data("data/mcmv/DADOS_RURAL.xlsx")
+        if data and data['cadastro'] is not None:
+            return data['cadastro']
+    except Exception as e:
+        st.error(f"Erro ao carregar dados MCMV: {str(e)}")
+    return None
+
 def format_currency(value):
     """Format currency in Brazilian format"""
     if pd.isna(value):
@@ -138,8 +158,9 @@ def main():
     
     # Load data
     try:
-        with st.spinner("Carregando dados do PAC..."):
+        with st.spinner("Carregando dados..."):
             df = load_pac_operations()
+            mcmv_df = load_mcmv_rural_data()
     except Exception as e:
         st.error(f"Erro ao carregar dados: {str(e)}")
         st.info("Verifique a conexão com o banco de dados")
@@ -148,125 +169,403 @@ def main():
     # Sidebar filters
     st.sidebar.header("🔍 Filtros")
     
-    # State filter
-    estados = st.sidebar.multiselect(
-        "Estados (UF)",
-        options=sorted(df['uf'].unique()),
-        default=[]
+    # Program selection
+    program_type = st.sidebar.radio(
+        "Programa",
+        ["PAC", "MCMV Rural", "Visão Integrada"],
+        index=0
     )
     
-    # Program filter
-    programas = st.sidebar.multiselect(
-        "Programas",
-        options=sorted([p for p in df['programa'].unique() if pd.notna(p)]),
-        default=[]
-    )
-    
-    # Urgency filter
-    urgencias = st.sidebar.multiselect(
-        "Nível de Urgência",
-        options=['Crítico', 'Urgente', 'Atenção', 'Normal', 'Sem prazo'],
-        default=[]
-    )
-    
-    # Delay filter
-    show_delays = st.sidebar.checkbox("Apenas operações com atraso (>90 dias)", False)
-    show_suspensivas = st.sidebar.checkbox("Apenas operações com suspensivas vencidas", False)
-    
-    # Apply filters
-    filtered_df = df.copy()
-    
-    if estados:
-        filtered_df = filtered_df[filtered_df['uf'].isin(estados)]
-    
-    if programas:
-        filtered_df = filtered_df[filtered_df['programa'].isin(programas)]
-    
-    if urgencias:
-        filtered_df = filtered_df[filtered_df['urgencia'].isin(urgencias)]
-    
-    if show_delays:
-        filtered_df = filtered_df[
-            (filtered_df['dias_sem_movimentacao'] > 90) | 
-            (filtered_df['has_delay'] == True)
-        ]
-    
-    if show_suspensivas:
-        filtered_df = filtered_df[filtered_df['suspensiva_vencida'] == True]
-    
-    # Main content
-    # Alert section
-    st.markdown("### 🚨 Alertas Críticos")
-    
-    col1, col2, col3 = st.columns(3)
-    
-    with col1:
-        critical_ops = len(filtered_df[filtered_df['urgencia'] == 'Crítico'])
-        st.markdown(f"""
-        <div class="alert-box critical">
-            <h4>Operações Críticas</h4>
-            <h2>{critical_ops}</h2>
-            <p>Suspensivas já vencidas</p>
-        </div>
-        """, unsafe_allow_html=True)
-    
-    with col2:
-        urgent_ops = len(filtered_df[filtered_df['urgencia'] == 'Urgente'])
-        st.markdown(f"""
-        <div class="alert-box warning">
-            <h4>Operações Urgentes</h4>
-            <h2>{urgent_ops}</h2>
-            <p>Vencem em até 30 dias</p>
-        </div>
-        """, unsafe_allow_html=True)
-    
-    with col3:
-        delayed_ops = len(filtered_df[
-            (filtered_df['dias_sem_movimentacao'] > 90) | 
-            (filtered_df['has_delay'] == True)
+    if program_type == "PAC":
+        # PAC filters
+        estados = st.sidebar.multiselect(
+            "Estados (UF)",
+            options=sorted(df['uf'].unique()),
+            default=[]
+        )
+        
+        programas = st.sidebar.multiselect(
+            "Programas",
+            options=sorted([p for p in df['programa'].unique() if pd.notna(p)]),
+            default=[]
+        )
+        
+        urgencias = st.sidebar.multiselect(
+            "Nível de Urgência",
+            options=['Crítico', 'Urgente', 'Atenção', 'Normal', 'Sem prazo'],
+            default=[]
+        )
+        
+        show_delays = st.sidebar.checkbox("Apenas operações com atraso (>90 dias)", False)
+        show_suspensivas = st.sidebar.checkbox("Apenas operações com suspensivas vencidas", False)
+        
+        # Apply PAC filters
+        filtered_df = df.copy()
+        
+        if estados:
+            filtered_df = filtered_df[filtered_df['uf'].isin(estados)]
+        
+        if programas:
+            filtered_df = filtered_df[filtered_df['programa'].isin(programas)]
+        
+        if urgencias:
+            filtered_df = filtered_df[filtered_df['urgencia'].isin(urgencias)]
+        
+        if show_delays:
+            filtered_df = filtered_df[
+                (filtered_df['dias_sem_movimentacao'] > 90) | 
+                (filtered_df['has_delay'] == True)
+            ]
+        
+        if show_suspensivas:
+            filtered_df = filtered_df[filtered_df['suspensiva_vencida'] == True]
+        
+        # Show PAC alerts
+        st.markdown("### 🚨 Alertas Críticos - PAC")
+        
+        col1, col2, col3 = st.columns(3)
+        
+        with col1:
+            critical_ops = len(filtered_df[filtered_df['urgencia'] == 'Crítico'])
+            st.markdown(f"""
+            <div class="alert-box critical">
+                <h4>Operações Críticas</h4>
+                <h2>{critical_ops}</h2>
+                <p>Suspensivas já vencidas</p>
+            </div>
+            """, unsafe_allow_html=True)
+        
+        with col2:
+            urgent_ops = len(filtered_df[filtered_df['urgencia'] == 'Urgente'])
+            st.markdown(f"""
+            <div class="alert-box warning">
+                <h4>Operações Urgentes</h4>
+                <h2>{urgent_ops}</h2>
+                <p>Vencem em até 30 dias</p>
+            </div>
+            """, unsafe_allow_html=True)
+        
+        with col3:
+            delayed_ops = len(filtered_df[
+                (filtered_df['dias_sem_movimentacao'] > 90) | 
+                (filtered_df['has_delay'] == True)
+            ])
+            st.markdown(f"""
+            <div class="alert-box info">
+                <h4>Operações Paradas</h4>
+                <h2>{delayed_ops}</h2>
+                <p>Mais de 90 dias sem movimento</p>
+            </div>
+            """, unsafe_allow_html=True)
+        
+        # PAC Tabs
+        tab1, tab2, tab3, tab4, tab5 = st.tabs([
+            "📊 Visão Geral",
+            "⏰ Análise de Suspensivas", 
+            "🚦 Atrasos e Gargalos",
+            "📝 Análise de Texto",
+            "🗺️ Análise Geográfica"
         ])
-        st.markdown(f"""
-        <div class="alert-box info">
-            <h4>Operações Paradas</h4>
-            <h2>{delayed_ops}</h2>
-            <p>Mais de 90 dias sem movimento</p>
-        </div>
-        """, unsafe_allow_html=True)
+        
+        with tab1:
+            render_overview(filtered_df)
+        
+        with tab2:
+            render_suspensivas_analysis(filtered_df)
+        
+        with tab3:
+            render_delays_analysis(filtered_df)
+        
+        with tab4:
+            render_text_analysis(filtered_df)
+        
+        with tab5:
+            render_geographic_analysis(filtered_df)
     
-    # Tabs
-    tab1, tab2, tab3, tab4, tab5 = st.tabs([
-        "📊 Visão Geral",
-        "⏰ Análise de Suspensivas", 
-        "🚦 Atrasos e Gargalos",
-        "📝 Análise de Texto",
-        "🗺️ Análise Geográfica"
-    ])
+    elif program_type == "MCMV Rural":
+        # MCMV Rural view
+        render_mcmv_rural_dashboard(mcmv_df)
     
-    with tab1:
-        render_overview(filtered_df)
-    
-    with tab2:
-        render_suspensivas_analysis(filtered_df)
-    
-    with tab3:
-        render_delays_analysis(filtered_df)
-    
-    with tab4:
-        render_text_analysis(filtered_df)
-    
-    with tab5:
-        render_geographic_analysis(filtered_df)
+    else:
+        # Integrated view
+        render_integrated_view(df, mcmv_df)
     
     # Footer
     st.markdown("---")
     st.markdown(
-        f"**Última atualização dos dados:** {df['data_atualizacao'].max().strftime('%d/%m/%Y') if pd.notna(df['data_atualizacao'].max()) else 'N/A'} | "
-        f"**Total de operações:** {len(df):,}".replace(",", ".")
+        f"**Última atualização PAC:** {df['data_atualizacao'].max().strftime('%d/%m/%Y') if pd.notna(df['data_atualizacao'].max()) else 'N/A'} | "
+        f"**Total de operações:** PAC: {len(df):,} | MCMV Rural: {len(mcmv_df):,} projetos".replace(",", ".")
     )
 
+def render_mcmv_rural_dashboard(mcmv_df):
+    """Render MCMV Rural dashboard"""
+    if mcmv_df is None:
+        st.error("Erro ao carregar dados MCMV Rural")
+        return
+    
+    st.header("🏘️ MCMV Rural - Minha Casa Minha Vida Rural")
+    
+    # Filters
+    col1, col2 = st.sidebar.columns(2)
+    with col1:
+        estados_mcmv = st.sidebar.multiselect(
+            "Estados MCMV",
+            options=sorted(mcmv_df['uf'].unique()),
+            default=[]
+        )
+    
+    with col2:
+        if 'situacao_obra' in mcmv_df.columns:
+            situacoes = st.sidebar.multiselect(
+                "Situação",
+                options=sorted(mcmv_df['situacao_obra'].unique()),
+                default=[]
+            )
+    
+    # Apply filters
+    filtered_mcmv = mcmv_df.copy()
+    if estados_mcmv:
+        filtered_mcmv = filtered_mcmv[filtered_mcmv['uf'].isin(estados_mcmv)]
+    if 'situacao_obra' in mcmv_df.columns and situacoes:
+        filtered_mcmv = filtered_mcmv[filtered_mcmv['situacao_obra'].isin(situacoes)]
+    
+    # Key metrics
+    col1, col2, col3, col4 = st.columns(4)
+    
+    with col1:
+        st.metric("Total de Projetos", f"{len(filtered_mcmv):,}".replace(",", "."))
+    
+    with col2:
+        total_uh = filtered_mcmv['qt_uh_construcao'].sum()
+        st.metric("Total de UH", f"{total_uh:,}".replace(",", "."))
+    
+    with col3:
+        total_invest = filtered_mcmv['valor_total_investimento'].sum() / 1e9
+        st.metric("Investimento Total", f"R$ {total_invest:.2f} bi")
+    
+    with col4:
+        if 'percentual_execucao' in filtered_mcmv.columns:
+            avg_exec = filtered_mcmv['percentual_execucao'].mean()
+            st.metric("Execução Média", f"{avg_exec:.1f}%")
+        else:
+            st.metric("Municípios", f"{filtered_mcmv['municipio'].nunique():,}".replace(",", "."))
+    
+    # Status summary if available
+    if 'situacao_obra' in filtered_mcmv.columns:
+        st.subheader("📊 Resumo por Situação")
+        status_summary = filtered_mcmv.groupby('situacao_obra').agg({
+            'nu_apf': 'count',
+            'qt_uh_construcao': 'sum',
+            'valor_total_investimento': 'sum'
+        }).reset_index()
+        
+        status_summary.columns = ['Situação', 'Projetos', 'Unidades Habitacionais', 'Investimento Total']
+        status_summary['Investimento Total'] = status_summary['Investimento Total'].apply(
+            lambda x: f"R$ {x/1e6:.1f}M"
+        )
+        
+        st.dataframe(status_summary, use_container_width=True, hide_index=True)
+    
+    # Charts
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        # Top states
+        state_summary = filtered_mcmv.groupby('uf')['qt_uh_construcao'].sum().sort_values(ascending=False).head(10)
+        fig = px.bar(
+            x=state_summary.values,
+            y=state_summary.index,
+            orientation='h',
+            title="Top 10 Estados por Unidades Habitacionais",
+            labels={'x': 'Unidades Habitacionais', 'y': 'Estado'},
+            color=state_summary.values,
+            color_continuous_scale='Viridis'
+        )
+        st.plotly_chart(fig, use_container_width=True)
+    
+    with col2:
+        # Status distribution
+        if 'situacao_obra' in filtered_mcmv.columns:
+            status_counts = filtered_mcmv['situacao_obra'].value_counts()
+            fig = px.pie(
+                values=status_counts.values,
+                names=status_counts.index,
+                title="Distribuição por Situação",
+                hole=0.4
+            )
+            st.plotly_chart(fig, use_container_width=True)
+        else:
+            # Alternative chart - investment by state
+            state_invest = filtered_mcmv.groupby('uf')['valor_total_investimento'].sum().sort_values(ascending=False).head(10)
+            fig = px.bar(
+                x=state_invest.values/1e6,
+                y=state_invest.index,
+                orientation='h',
+                title="Top 10 Estados por Investimento",
+                labels={'x': 'Investimento (R$ milhões)', 'y': 'Estado'}
+            )
+            st.plotly_chart(fig, use_container_width=True)
+    
+    # Execution progress if available
+    if 'percentual_execucao' in filtered_mcmv.columns:
+        st.subheader("📈 Progresso de Execução")
+        
+        # Create execution bins
+        bins = [0, 25, 50, 75, 90, 99, 100]
+        labels = ['0-25%', '26-50%', '51-75%', '76-90%', '91-99%', '100%']
+        filtered_mcmv['exec_range'] = pd.cut(
+            filtered_mcmv['percentual_execucao'], 
+            bins=bins, 
+            labels=labels, 
+            include_lowest=True
+        )
+        
+        exec_dist = filtered_mcmv.groupby('exec_range', observed=True).agg({
+            'nu_apf': 'count',
+            'qt_uh_construcao': 'sum'
+        }).reset_index()
+        
+        fig = px.bar(
+            exec_dist,
+            x='exec_range',
+            y='qt_uh_construcao',
+            title='Unidades Habitacionais por Faixa de Execução',
+            labels={'exec_range': 'Faixa de Execução', 'qt_uh_construcao': 'Unidades Habitacionais'},
+            text='qt_uh_construcao'
+        )
+        fig.update_traces(texttemplate='%{text:,.0f}', textposition='outside')
+        st.plotly_chart(fig, use_container_width=True)
+    
+    # Top projects table
+    st.subheader("🏆 Maiores Projetos")
+    top_projects = filtered_mcmv.nlargest(10, 'qt_uh_construcao')[
+        ['nome_empreendimento', 'uf', 'municipio', 'qt_uh_construcao', 'valor_total_investimento']
+    ].copy()
+    
+    top_projects['valor_total_investimento'] = top_projects['valor_total_investimento'].apply(
+        lambda x: f"R$ {x/1e6:.1f}M"
+    )
+    top_projects.columns = ['Empreendimento', 'UF', 'Município', 'UH', 'Investimento']
+    
+    st.dataframe(top_projects, use_container_width=True, hide_index=True)
+
+def render_integrated_view(pac_df, mcmv_df):
+    """Render integrated PAC + MCMV view"""
+    st.header("📈 Visão Integrada - PAC + MCMV")
+    
+    if pac_df is None or mcmv_df is None:
+        st.error("Erro ao carregar dados para visão integrada")
+        return
+    
+    # Combined metrics
+    col1, col2, col3, col4 = st.columns(4)
+    
+    with col1:
+        total_projects = len(pac_df) + len(mcmv_df)
+        st.metric("Total de Projetos", f"{total_projects:,}".replace(",", "."))
+    
+    with col2:
+        pac_value = pac_df['valor_repasse'].sum() / 1e9
+        mcmv_value = mcmv_df['valor_total_investimento'].sum() / 1e9
+        total_value = pac_value + mcmv_value
+        st.metric("Investimento Total", f"R$ {total_value:.2f} bi")
+    
+    with col3:
+        pac_munic = pac_df['municipio_beneficiado'].nunique()
+        st.metric("Municípios PAC", f"{pac_munic:,}".replace(",", "."))
+    
+    with col4:
+        mcmv_uh = mcmv_df['qt_uh_construcao'].sum()
+        st.metric("UH MCMV Rural", f"{mcmv_uh:,}".replace(",", "."))
+    
+    # Program comparison
+    st.subheader("📊 Comparação entre Programas")
+    
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        # Projects comparison
+        comparison_data = pd.DataFrame({
+            'Programa': ['PAC', 'MCMV Rural'],
+            'Projetos': [len(pac_df), len(mcmv_df)],
+            'Investimento (R$ bi)': [pac_value, mcmv_value]
+        })
+        
+        fig = px.bar(
+            comparison_data,
+            x='Programa',
+            y='Projetos',
+            title='Quantidade de Projetos',
+            color='Programa',
+            text='Projetos'
+        )
+        fig.update_traces(texttemplate='%{text:,.0f}', textposition='outside')
+        st.plotly_chart(fig, use_container_width=True)
+    
+    with col2:
+        # Investment comparison
+        fig = px.bar(
+            comparison_data,
+            x='Programa',
+            y='Investimento (R$ bi)',
+            title='Investimento Total',
+            color='Programa',
+            text='Investimento (R$ bi)'
+        )
+        fig.update_traces(texttemplate='R$ %{text:.1f}bi', textposition='outside')
+        st.plotly_chart(fig, use_container_width=True)
+    
+    # State comparison
+    st.subheader("🗺️ Comparação por Estado")
+    
+    # Prepare data
+    pac_by_state = pac_df.groupby('uf')['valor_repasse'].sum().reset_index()
+    pac_by_state['programa'] = 'PAC'
+    pac_by_state.columns = ['uf', 'valor', 'programa']
+    
+    mcmv_by_state = mcmv_df.groupby('uf')['valor_total_investimento'].sum().reset_index()
+    mcmv_by_state['programa'] = 'MCMV Rural'
+    mcmv_by_state.columns = ['uf', 'valor', 'programa']
+    
+    combined = pd.concat([pac_by_state, mcmv_by_state])
+    
+    # Get top 15 states by total investment
+    top_states = combined.groupby('uf')['valor'].sum().nlargest(15).index
+    combined_filtered = combined[combined['uf'].isin(top_states)]
+    
+    fig = px.bar(
+        combined_filtered,
+        x='uf',
+        y='valor',
+        color='programa',
+        title='Top 15 Estados - Investimentos PAC vs MCMV Rural',
+        labels={'valor': 'Investimento (R$)', 'uf': 'Estado'},
+        barmode='group'
+    )
+    fig.update_layout(xaxis_tickangle=-45)
+    st.plotly_chart(fig, use_container_width=True)
+    
+    # Summary table
+    st.subheader("📋 Resumo por Programa")
+    
+    summary = pd.DataFrame({
+        'Programa': ['PAC', 'MCMV Rural'],
+        'Projetos': [len(pac_df), len(mcmv_df)],
+        'Investimento Total': [f"R$ {pac_value:.2f}bi", f"R$ {mcmv_value:.2f}bi"],
+        'Estados': [pac_df['uf'].nunique(), mcmv_df['uf'].nunique()],
+        'Municípios': [pac_df['municipio_beneficiado'].nunique(), mcmv_df['municipio'].nunique()],
+        'Média por Projeto': [
+            f"R$ {pac_df['valor_repasse'].mean()/1e6:.1f}M",
+            f"R$ {mcmv_df['valor_total_investimento'].mean()/1e6:.1f}M"
+        ]
+    })
+    
+    st.dataframe(summary, use_container_width=True, hide_index=True)
+
+# Keep all the original PAC render functions
 def render_overview(df):
     """Render overview metrics and charts"""
-    st.header("📊 Visão Geral")
+    st.header("📊 Visão Geral - PAC")
     
     # Key metrics
     col1, col2, col3, col4 = st.columns(4)
@@ -315,7 +614,7 @@ def render_overview(df):
 
 def render_suspensivas_analysis(df):
     """Analyze suspensivas (blocking conditions)"""
-    st.header("⏰ Análise de Suspensivas")
+    st.header("⏰ Análise de Suspensivas - PAC")
     
     # Suspensivas overview
     total_with_suspensiva = len(df[df['suspensiva'].notna()])
@@ -373,7 +672,7 @@ def render_suspensivas_analysis(df):
 
 def render_delays_analysis(df):
     """Analyze delays and bottlenecks"""
-    st.header("🚦 Análise de Atrasos e Gargalos")
+    st.header("🚦 Análise de Atrasos e Gargalos - PAC")
     
     # Delays overview
     delayed_df = df[(df['dias_sem_movimentacao'] > 90) | (df['has_delay'] == True)]
@@ -442,7 +741,7 @@ def render_delays_analysis(df):
 
 def render_text_analysis(df):
     """Text analysis of situacao_atual field"""
-    st.header("📝 Análise de Texto - Situação Atual")
+    st.header("📝 Análise de Texto - Situação Atual PAC")
     
     # Get all texts
     texts = df['situacao_atual'].fillna('').tolist()
@@ -504,7 +803,7 @@ def render_text_analysis(df):
 
 def render_geographic_analysis(df):
     """Geographic analysis by state"""
-    st.header("🗺️ Análise Geográfica")
+    st.header("🗺️ Análise Geográfica - PAC")
     
     # State summary
     state_summary = df.groupby('uf').agg({
@@ -520,33 +819,6 @@ def render_geographic_analysis(df):
                            'Progresso_Medio', 'Com_Atraso', 'Suspensivas_Vencidas']
     
     state_summary['Taxa_Atraso'] = (state_summary['Com_Atraso'] / state_summary['Total_Ops'] * 100).round(1)
-    
-    # Map visualization
-    fig = px.scatter_geo(
-        state_summary,
-        locations='UF',
-        locationmode='geojson-id',
-        size='Total_Ops',
-        color='Taxa_Atraso',
-        hover_data=['Valor_Repasse', 'Progresso_Medio'],
-        title='Operações PAC por Estado (tamanho = quantidade, cor = taxa de atraso)',
-        color_continuous_scale='RdYlGn_r'
-    )
-    
-    # Update layout for Brazil
-    fig.update_geos(
-        visible=False,
-        resolution=50,
-        showcountries=True,
-        countrycolor="RebeccaPurple",
-        showcoastlines=True,
-        coastlinecolor="RebeccaPurple",
-        showland=True,
-        landcolor="LightGreen",
-        fitbounds="locations"
-    )
-    
-    st.plotly_chart(fig, use_container_width=True)
     
     # Regional comparison
     col1, col2 = st.columns(2)
