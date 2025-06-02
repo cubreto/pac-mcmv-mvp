@@ -11,3 +11,7 @@ postgres_data/
 temp_analysis/
 data/raw/
 *.xlsx
+*.bak
+streamlit_app/dashboard_*_backup.py
+streamlit_app/fix_*.py
+fix_*.py
