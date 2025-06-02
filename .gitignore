@@ -9,3 +9,5 @@ __pycache__/
 .idea/
 postgres_data/
 temp_analysis/
+data/raw/
+*.xlsx
