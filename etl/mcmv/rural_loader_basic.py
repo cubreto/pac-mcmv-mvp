@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """
-Enhanced Rural MCMV data loader with prioritários integration
+Rural MCMV data loader
+Processes DADOS_RURAL.xlsx with multiple sheets
 """
 
 import pandas as pd
@@ -13,7 +14,7 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 class RuralLoader(MCMVBaseLoader):
-    """Enhanced loader for Rural MCMV data"""
+    """Loader for Rural MCMV data"""
     
     def load_data(self):
         """Load Rural data from Excel file"""
@@ -39,24 +40,11 @@ class RuralLoader(MCMVBaseLoader):
             return False
             
     def transform_cadastro(self):
-        """Transform cadastro data to database schema with prioritários integration"""
+        """Transform cadastro data to database schema"""
         if self.cadastro_df is None:
             return None
             
         df = self.cadastro_df.copy()
-        
-        # Merge with prioritários data if available
-        if self.prioritarios_df is not None:
-            # Select relevant columns from prioritários
-            prio_cols = ['APF', '% Exec', 'Situação do Empreendimento', 
-                        'UH Entregues', 'Valor Desembolsado']
-            prio_df = self.prioritarios_df[prio_cols].copy()
-            prio_df.columns = ['NU_APF', 'percentual_exec', 'situacao_prio', 
-                              'uh_entregues', 'valor_desembolsado']
-            
-            # Merge
-            df = df.merge(prio_df, on='NU_APF', how='left')
-            logger.info(f"Merged with prioritários data: {df['percentual_exec'].notna().sum()} matches")
         
         # Column mapping for cadastro
         column_mapping = {
@@ -75,11 +63,7 @@ class RuralLoader(MCMVBaseLoader):
             'NO_EO': 'entidade_organizadora',
             'NU_CNPJ_EO': 'cnpj_eo',
             'NO_CONSTRUTORA': 'construtora',
-            'NU_CNPJ_CONSTRUTORA': 'cnpj_construtora',
-            'percentual_exec': 'percentual_execucao',
-            'situacao_prio': 'situacao_obra',
-            'uh_entregues': 'uh_entregues',
-            'valor_desembolsado': 'valor_desembolsado'
+            'NU_CNPJ_CONSTRUTORA': 'cnpj_construtora'
         }
         
         # Select available columns
@@ -94,27 +78,22 @@ class RuralLoader(MCMVBaseLoader):
         
         # Clean data
         numeric_fields = ['qt_uh_construcao', 'qt_uh_projeto', 'valor_obra', 
-                         'valor_projeto', 'valor_total_investimento', 'percentual_execucao',
-                         'uh_entregues', 'valor_desembolsado']
+                         'valor_projeto', 'valor_total_investimento']
         df_transformed = self.clean_numeric_fields(df_transformed, [f for f in numeric_fields if f in df_transformed.columns])
         
         date_fields = ['data_inicio_obra', 'data_contratacao']
         df_transformed = self.clean_date_fields(df_transformed, [f for f in date_fields if f in df_transformed.columns])
         
-        text_fields = ['nome_empreendimento', 'municipio', 'entidade_organizadora', 'construtora', 'situacao_obra']
+        text_fields = ['nome_empreendimento', 'municipio', 'entidade_organizadora', 'construtora']
         df_transformed = self.clean_text_fields(df_transformed, [f for f in text_fields if f in df_transformed.columns])
         
         df_transformed = self.validate_uf(df_transformed)
         
-        # Normalize status
-        if 'situacao_obra' in df_transformed.columns:
-            df_transformed['situacao_obra'] = df_transformed['situacao_obra'].fillna('Não informado')
-        else:
-            # Fallback to basic status
-            df_transformed['situacao_obra'] = df_transformed.apply(
-                lambda row: 'Em execução' if pd.notna(row.get('data_inicio_obra')) else 'Não iniciada',
-                axis=1
-            )
+        # Add default status based on data_inicio_obra
+        df_transformed['situacao_obra'] = df_transformed.apply(
+            lambda row: 'Em execução' if pd.notna(row.get('data_inicio_obra')) else 'Não iniciada',
+            axis=1
+        )
         
         logger.info(f"Transformed {len(df_transformed)} cadastro records")
         return df_transformed
@@ -124,7 +103,7 @@ class RuralLoader(MCMVBaseLoader):
         if self.pf_df is None:
             return None
             
-        # Count beneficiaries per APF
+        # For now, just count beneficiaries per APF
         beneficiary_count = self.pf_df.groupby('NU_APF').size().reset_index(name='num_beneficiarios')
         logger.info(f"Counted beneficiaries for {len(beneficiary_count)} projects")
         return beneficiary_count
@@ -140,8 +119,7 @@ class RuralLoader(MCMVBaseLoader):
         if results['cadastro'] is not None:
             total_uh = results['cadastro']['qt_uh_construcao'].sum()
             total_investment = results['cadastro']['valor_total_investimento'].sum()
-            delivered_uh = results['cadastro']['uh_entregues'].sum() if 'uh_entregues' in results['cadastro'].columns else 0
-            logger.info(f"Rural totals: {total_uh:,.0f} UH, {delivered_uh:,.0f} delivered, R$ {total_investment:,.2f}")
+            logger.info(f"Rural totals: {total_uh:,.0f} UH, R$ {total_investment:,.2f}")
             
         return results
 
@@ -159,8 +137,6 @@ if __name__ == "__main__":
     if data:
         print(f"✅ Loaded Rural data successfully")
         if data['cadastro'] is not None:
-            df = data['cadastro']
-            print(f"   - Cadastro: {len(df)} projects")
-            print(f"   - With execution %: {df['percentual_execucao'].notna().sum() if 'percentual_execucao' in df.columns else 0}")
-            print(f"\nStatus distribution:")
-            print(df['situacao_obra'].value_counts())
+            print(f"   - Cadastro: {len(data['cadastro'])} projects")
+        if data['beneficiarios'] is not None:
+            print(f"   - Beneficiários: {len(data['beneficiarios'])} beneficiary counts")
