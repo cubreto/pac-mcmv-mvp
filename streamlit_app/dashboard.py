@@ -58,7 +58,7 @@ st.markdown("""
 def get_connection():
     """Create database connection"""
     # Use environment variable or default
-    db_url = os.getenv('DATABASE_URL', 'postgresql://pac_user:pac_password@db:5432/pac_mcmv')
+    db_url = os.getenv('DATABASE_URL', 'postgresql://postgres:postgres123@db:5432/pac_mcmv')
     return create_engine(db_url)
 
 # Load data with caching
@@ -291,11 +291,28 @@ def main():
         render_integrated_view(df, mcmv_df)
     
     # Footer
+    # ── Footer ──────────────────────────────────────────────────────────────
     st.markdown("---")
-    st.markdown(
-        f"**Última atualização PAC:** {df['data_atualizacao'].max().strftime('%d/%m/%Y') if pd.notna(df['data_atualizacao'].max()) else 'N/A'} | "
-        f"**Total de operações:** PAC: {len(df):,} | MCMV Rural: {len(mcmv_df):,} projetos".replace(",", ".")
+
+    # protect against empty / None result
+    mcmv_count = len(mcmv_df) if isinstance(mcmv_df, pd.DataFrame) else 0
+    ultima_pac  = (
+    df["data_atualizacao"].max().strftime("%d/%m/%Y")
+    if pd.notna(df["data_atualizacao"].max())
+    else "N/A"
     )
+
+    st.markdown(
+    f"**Última atualização PAC:** {ultima_pac} | "
+    f"**Total de operações:** PAC: {len(df):,} | "
+    f"MCMV Rural: {mcmv_count:,} projetos".replace(",", ".")
+    )
+
+    #st.markdown("---")
+    #st.markdown(
+    #    f"**Última atualização PAC:** {df['data_atualizacao'].max().strftime('%d/%m/%Y') if pd.notna(df['data_atualizacao'].max()) else 'N/A'} | "
+    #    f"**Total de operações:** PAC: {len(df):,} | MCMV Rural: {len(mcmv_df):,} projetos".replace(",", ".")
+    #)
 
 def render_mcmv_rural_dashboard(mcmv_df):
     """Render MCMV Rural dashboard"""
