@@ -1,0 +1,25 @@
+version: '3.8'
+
+services:
+  streamlit-mcmv:
+    build: .
+    container_name: mcmv-complete
+    environment:
+      DB_HOST: pac-mcmv-mvp-db-1
+      DB_PORT: 5432
+      DB_NAME: pac_mcmv
+      DB_USER: postgres
+      DB_PASSWORD: postgres123
+    ports:
+      - "8502:8502"
+    volumes:
+      - ./data:/app/data:ro
+      - ./streamlit_app:/app/streamlit_app
+      - ./etl:/app/etl
+    command: streamlit run streamlit_app/dashboard_mcmv_complete.py --server.port=8502 --server.address=0.0.0.0
+    networks:
+      - pac-mcmv-mvp_default
+
+networks:
+  pac-mcmv-mvp_default:
+    external: true
