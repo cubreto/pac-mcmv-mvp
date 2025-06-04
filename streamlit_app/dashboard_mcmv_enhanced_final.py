@@ -14,6 +14,9 @@ import os
 from datetime import datetime
 import numpy as np
 import urllib.request
+from io import BytesIO
+
+
 
 
 # Page config
@@ -534,6 +537,110 @@ def load_contratacoes_summary_detailed():
         # Fall back to calculated version
         return load_contratacoes_summary_calculated()
 
+def create_pptx_report(summary):
+    """Create a PowerPoint presentation with the contracting data"""
+    from io import BytesIO
+    from pptx import Presentation
+    from pptx.util import Inches, Pt
+    from pptx.enum.text import PP_ALIGN
+    from pptx.dml.color import RGBColor
+    
+    # Create presentation
+    prs = Presentation()
+    prs.slide_width = Inches(16)
+    prs.slide_height = Inches(9)
+    
+    # Title slide
+    title_slide_layout = prs.slide_layouts[0]
+    slide = prs.slides.add_slide(title_slide_layout)
+    title = slide.shapes.title
+    subtitle = slide.placeholders[1]
+    
+    title.text = "Status de Contratações - MCMV"
+    subtitle.text = f"Relatório gerado em {datetime.now().strftime('%d/%m/%Y às %H:%M')}"
+    
+    # Data slide
+    bullet_slide_layout = prs.slide_layouts[5]  # Blank layout
+    slide = prs.slides.add_slide(bullet_slide_layout)
+    
+    # Add title
+    title_shape = slide.shapes.add_textbox(Inches(0.5), Inches(0.5), Inches(15), Inches(1))
+    title_frame = title_shape.text_frame
+    title_frame.text = "Resumo de Contratações"
+    title_frame.paragraphs[0].font.size = Pt(32)
+    title_frame.paragraphs[0].font.bold = True
+    title_frame.paragraphs[0].alignment = PP_ALIGN.CENTER
+    
+    # Add data boxes
+    box_width = Inches(4.5)
+    box_height = Inches(2.5)
+    top = Inches(2)
+    
+    # Helper function to format numbers
+    def format_number_pptx(value):
+        return f"{int(value):,}".replace(",", ".")
+    
+    # Aguardando MCID box
+    left = Inches(0.75)
+    box = slide.shapes.add_textbox(left, top, box_width, box_height)
+    tf = box.text_frame
+    tf.text = "AGUARDANDO AUTORIZAÇÃO MCID"
+    p = tf.add_paragraph()
+    p.text = f"Empreendimentos: {format_number_pptx(summary['aguardando_mcid'])}"
+    p = tf.add_paragraph()
+    p.text = f"UH: {format_number_pptx(summary['uh_aguardando_mcid'])}"
+    
+    # MCID Emitida box
+    left = Inches(5.75)
+    box = slide.shapes.add_textbox(left, top, box_width, box_height)
+    tf = box.text_frame
+    tf.text = "AUTORIZAÇÃO MCID EMITIDA"
+    p = tf.add_paragraph()
+    p.text = f"Empreendimentos: {format_number_pptx(summary['mcid_emitida'])}"
+    p = tf.add_paragraph()
+    p.text = f"UH: {format_number_pptx(summary['uh_mcid_emitida'])}"
+    
+    # Contratos Emitidos box
+    left = Inches(10.75)
+    box = slide.shapes.add_textbox(left, top, box_width, box_height)
+    tf = box.text_frame
+    tf.text = "CONTRATOS EMITIDOS"
+    p = tf.add_paragraph()
+    p.text = f"Empreendimentos: {format_number_pptx(summary['contratos_emitidos'])}"
+    p = tf.add_paragraph()
+    p.text = f"UH: {format_number_pptx(summary['uh_contratos_emitidos'])}"
+    
+    # Total box
+    top = Inches(5)
+    left = Inches(4)
+    box_width = Inches(8)
+    box = slide.shapes.add_textbox(left, top, box_width, box_height)
+    tf = box.text_frame
+    tf.text = "TOTAL GERAL"
+    tf.paragraphs[0].font.bold = True
+    tf.paragraphs[0].font.size = Pt(24)
+    tf.paragraphs[0].alignment = PP_ALIGN.CENTER
+    
+    p = tf.add_paragraph()
+    p.text = f"Total Empreendimentos: {format_number_pptx(summary['total_empreendimentos'])}"
+    p.alignment = PP_ALIGN.CENTER
+    
+    p = tf.add_paragraph()
+    p.text = f"Total UH: {format_number_pptx(summary['uh_total'])}"
+    p.alignment = PP_ALIGN.CENTER
+    
+    p = tf.add_paragraph()
+    valor_bi = summary['valor_total'] / 1e9
+    p.text = f"Valor Total: R$ {valor_bi:.2f} bi".replace(".", ",")
+    p.alignment = PP_ALIGN.CENTER
+    
+    # Save to bytes
+    pptx_bytes = BytesIO()
+    prs.save(pptx_bytes)
+    pptx_bytes.seek(0)
+    
+    return pptx_bytes.getvalue()
+
 @st.cache_data(ttl=300)
 def load_contratacoes_summary_calculated():
     """
@@ -854,7 +961,6 @@ def render_contratacoes_tab():
     </div>
     """, unsafe_allow_html=True)
     
-    # Rest of the function remains the same...
     st.markdown("<br>", unsafe_allow_html=True)
     
     # Enhanced visualization section
@@ -991,7 +1097,119 @@ def render_contratacoes_tab():
         st.caption("📊 Dados atualizados dos views SQL contratadas")
     with col2:
         st.caption("💾 Cache atualizado a cada 5 minutos")
-
+    
+    # Export buttons
+    st.markdown("---")
+    st.markdown("### 📥 Exportar Dashboard")
+    
+    col1, col2, col3 = st.columns(3)
+    
+    with col1:
+        # Generate HTML for PDF export
+        html_content = f"""
+        <html>
+        <head>
+            <meta charset="UTF-8">
+            <style>
+                @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+                body {{ font-family: 'Inter', Arial, sans-serif; margin: 40px; }}
+                .header {{ text-align: center; margin-bottom: 40px; }}
+                .metric-container {{ 
+                    border: 1px solid #ddd; 
+                    padding: 20px; 
+                    margin: 10px;
+                    text-align: center;
+                    display: inline-block;
+                    width: 30%;
+                }}
+                .metric-title {{ font-size: 14px; font-weight: bold; color: #0066cc; margin-bottom: 15px; }}
+                .metric-value {{ font-size: 36px; font-weight: bold; color: #1f1f1f; }}
+                .metric-label {{ font-size: 12px; color: #666; margin-top: 5px; }}
+                .total-container {{ 
+                    background-color: #f0f8ff; 
+                    padding: 30px; 
+                    margin: 30px auto;
+                    border: 2px solid #0066cc;
+                    text-align: center;
+                }}
+            </style>
+        </head>
+        <body>
+            <div class="header">
+                <h1>Status de Contratações - MCMV</h1>
+                <p>Relatório gerado em: {datetime.now().strftime('%d/%m/%Y às %H:%M')}</p>
+            </div>
+            
+            <div style="text-align: center;">
+                <div class="metric-container">
+                    <div class="metric-title">AGUARDANDO AUTORIZAÇÃO MCID</div>
+                    <div class="metric-value">{format_br_number(summary['aguardando_mcid'])}</div>
+                    <div class="metric-label">Empreendimentos</div>
+                    <div class="metric-value">{format_br_number(summary['uh_aguardando_mcid'])}</div>
+                    <div class="metric-label">UH</div>
+                </div>
+                
+                <div class="metric-container">
+                    <div class="metric-title">AUTORIZAÇÃO MCID EMITIDA</div>
+                    <div class="metric-value">{format_br_number(summary['mcid_emitida'])}</div>
+                    <div class="metric-label">Empreendimentos</div>
+                    <div class="metric-value">{format_br_number(summary['uh_mcid_emitida'])}</div>
+                    <div class="metric-label">UH</div>
+                </div>
+                
+                <div class="metric-container">
+                    <div class="metric-title">CONTRATOS EMITIDOS</div>
+                    <div class="metric-value">{format_br_number(summary['contratos_emitidos'])}</div>
+                    <div class="metric-label">Empreendimentos</div>
+                    <div class="metric-value">{format_br_number(summary['uh_contratos_emitidos'])}</div>
+                    <div class="metric-label">UH</div>
+                </div>
+            </div>
+            
+            <div class="total-container">
+                <h2>TOTAL GERAL</h2>
+                <p><strong>Total Empreendimentos:</strong> {format_br_number(summary['total_empreendimentos'])}</p>
+                <p><strong>Total UH:</strong> {format_br_number(summary['uh_total'])}</p>
+                <p><strong>Valor Total:</strong> {format_br_currency(summary['valor_total'], 'bi')}</p>
+            </div>
+        </body>
+        </html>
+        """
+        
+        st.download_button(
+            label="📄 Download PDF",
+            data=html_content.encode('utf-8'),
+            file_name=f"contratacoes_mcmv_{datetime.now().strftime('%Y%m%d_%H%M')}.html",
+            mime="text/html",
+            help="Baixa o relatório em formato HTML (abra no navegador e imprima como PDF)"
+        )
+    
+    with col2:
+        # Create PowerPoint content
+        pptx_data = create_pptx_report(summary)
+        
+        st.download_button(
+            label="📊 Download PPTX",
+            data=pptx_data,
+            file_name=f"contratacoes_mcmv_{datetime.now().strftime('%Y%m%d_%H%M')}.pptx",
+            mime="application/vnd.openxmlformats-officedocument.presentationml.presentation",
+            help="Baixa o relatório em formato PowerPoint"
+        )
+    
+    with col3:
+        # Export chart as image
+        try:
+            img_bytes = fig.to_image(format="png", width=1200, height=600, scale=2)
+            
+            st.download_button(
+                label="📈 Download Gráfico",
+                data=img_bytes,
+                file_name=f"grafico_contratacoes_{datetime.now().strftime('%Y%m%d_%H%M')}.png",
+                mime="image/png",
+                help="Baixa o gráfico em alta resolução"
+            )
+        except Exception as e:
+            st.error(f"Erro ao gerar imagem: {str(e)}. Instale kaleido: pip install kaleido")
 
 def render_suspensivas_tab():
     """Render suspensivas analysis"""
