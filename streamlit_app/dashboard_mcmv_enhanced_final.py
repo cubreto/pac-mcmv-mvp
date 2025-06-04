@@ -773,8 +773,8 @@ def render_contratacoes_tab():
     # Update axes
     fig.update_xaxes(title_text="", tickfont=dict(size=11), row=1, col=1)
     fig.update_xaxes(title_text="", tickfont=dict(size=11), row=1, col=2)
-    fig.update_yaxes(title_text="UH", titlefont=dict(size=12), tickfont=dict(size=10), row=1, col=1)
-    fig.update_yaxes(title_text="Empreendimentos", titlefont=dict(size=12), tickfont=dict(size=10), row=1, col=2)
+    fig.update_yaxes(title_text="UH", title_font=dict(size=12), tickfont=dict(size=10), row=1, col=1)
+    fig.update_yaxes(title_text="Empreendimentos", title_font=dict(size=12), tickfont=dict(size=10), row=1, col=2)
     
     # Add grid
     fig.update_yaxes(showgrid=True, gridwidth=1, gridcolor='rgba(200,200,200,0.3)')
@@ -825,6 +825,7 @@ def render_contratacoes_tab():
         st.caption("📊 Dados atualizados dos views SQL contratadas")
     with col2:
         st.caption("💾 Cache atualizado a cada 5 minutos")
+
 
 def render_suspensivas_tab():
     """Render suspensivas analysis"""
