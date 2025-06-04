@@ -398,54 +398,85 @@ def render_region_barchart():
         st.plotly_chart(fig4, use_container_width=True)
 
 def render_contratacoes_tab():
-    """Render contracting status following the slide format"""
+    """Render enhanced contracting status with KPIs and visualization"""
     st.header("📑 Status de Contratações")
-    
+
     summary = load_contratacoes_summary()
-    
-    # Cards matching the slide format
+
     st.subheader("📊 Resumo de Contratações")
-    
-    # Aguardando Autorização MCID
+
+    # Top 3 buckets (same layout)
     col1, col2, col3 = st.columns(3)
+
     with col1:
         st.info("**AGUARDANDO AUTORIZAÇÃO MCID**")
-        st.metric("Empreendimentos", f"{int(summary['aguardando_mcid']):,}")
-        st.metric("UH", f"{int(summary['uh_aguardando_mcid']):,}")
+        st.metric("Empreendimentos", f"{int(summary['aguardando_mcid']):,}".replace(",", "."))
+        st.metric("UH", f"{int(summary['uh_aguardando_mcid']):,}".replace(",", "."))
         if summary['aguardando_mcid'] > 0:
             valor_est = (summary['uh_aguardando_mcid'] * 75000) / 1e6
             st.metric("Valor Estimado", f"R$ {valor_est:.2f} mi")
-    
-    # Autorização MCID Emitida
+
     with col2:
         st.warning("**AUTORIZAÇÃO MCID EMITIDA**")
-        st.metric("Empreendimentos", f"{int(summary['mcid_emitida']):,}")
-        st.metric("UH", f"{int(summary['uh_mcid_emitida']):,}")
+        st.metric("Empreendimentos", f"{int(summary['mcid_emitida']):,}".replace(",", "."))
+        st.metric("UH", f"{int(summary['uh_mcid_emitida']):,}".replace(",", "."))
         if summary['mcid_emitida'] > 0:
             valor_est = (summary['uh_mcid_emitida'] * 75000) / 1e6
             st.metric("Valor Estimado", f"R$ {valor_est:.2f} mi")
-    
-    # Contratos Emitidos
+
     with col3:
         st.success("**CONTRATOS EMITIDOS**")
-        st.metric("Empreendimentos", f"{int(summary['contratos_emitidos']):,}")
-        st.metric("UH", f"{int(summary['uh_contratos_emitidos']):,}")
+        st.metric("Empreendimentos", f"{int(summary['contratos_emitidos']):,}".replace(",", "."))
+        st.metric("UH", f"{int(summary['uh_contratos_emitidos']):,}".replace(",", "."))
         if summary['contratos_emitidos'] > 0:
             valor_est = (summary['uh_contratos_emitidos'] * 75000) / 1e6
             st.metric("Valor Estimado", f"R$ {valor_est:.2f} mi")
-    
+
+    st.markdown("---")
+
     # Distratos and Total
     col1, col2 = st.columns(2)
     with col1:
         st.error("**DISTRATOS**")
-        st.metric("Empreendimentos", f"{int(summary['distratos']):,}")
-        st.metric("UH", f"{int(summary['uh_distratos']):,}")
-    
+        st.metric("Empreendimentos", f"{int(summary['distratos']):,}".replace(",", "."))
+        st.metric("UH", f"{int(summary['uh_distratos']):,}".replace(",", "."))
+
     with col2:
         st.markdown("**📊 TOTAL GERAL**")
-        st.metric("Total Empreendimentos", f"{int(summary['total_empreendimentos']):,}")
-        st.metric("Total UH", f"{int(summary['uh_total']):,}")
+        st.metric("Total Empreendimentos", f"{int(summary['total_empreendimentos']):,}".replace(",", "."))
+        st.metric("Total UH", f"{int(summary['uh_total']):,}".replace(",", "."))
         st.metric("Valor Total", f"R$ {summary['valor_total']/1e9:.2f} bi")
+
+    st.markdown("---")
+
+    # Add bar chart for visual summary
+    chart_df = pd.DataFrame({
+        "Status": [
+            "Aguardando MCID",
+            "MCID Emitida",
+            "Contratos Emitidos",
+            "Distratos"
+        ],
+        "UH": [
+            summary["uh_aguardando_mcid"],
+            summary["uh_mcid_emitida"],
+            summary["uh_contratos_emitidos"],
+            summary["uh_distratos"]
+        ]
+    })
+
+    fig = px.bar(chart_df,
+                 x="Status",
+                 y="UH",
+                 text="UH",
+                 color="Status",
+                 title="📈 Unidades Habitacionais por Etapa",
+                 color_discrete_sequence=px.colors.qualitative.Pastel)
+
+    fig.update_traces(texttemplate="%{text:,.0f}", textposition="outside")
+    fig.update_layout(height=450, xaxis_title="", yaxis_title="UH")
+
+    st.plotly_chart(fig, use_container_width=True)
 
 def render_suspensivas_tab():
     """Render suspensivas analysis"""
