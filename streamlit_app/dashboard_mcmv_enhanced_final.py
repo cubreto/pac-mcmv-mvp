@@ -17,8 +17,6 @@ import urllib.request
 from io import BytesIO
 
 
-
-
 # Page config
 st.set_page_config(
     page_title="MCMV Analytics Dashboard - Enhanced",
@@ -540,10 +538,12 @@ def load_contratacoes_summary_detailed():
 def create_pptx_report(summary):
     """Create a PowerPoint presentation with the contracting data"""
     from io import BytesIO
-    from pptx import Presentation
-    from pptx.util import Inches, Pt
-    from pptx.enum.text import PP_ALIGN
-    from pptx.dml.color import RGBColor
+    try:
+        from pptx import Presentation
+        from pptx.util import Inches, Pt
+        from pptx.enum.text import PP_ALIGN
+    except ImportError:
+        return b"PowerPoint export not available"
     
     # Create presentation
     prs = Presentation()
@@ -1430,8 +1430,7 @@ def main():
         if st.button("🔄 Atualizar Dados"):
             st.cache_data.clear()
             st.rerun()
-        if st.button("🔧 Debug Contratações"):
-            debug_contratacoes_data()
+
 
     
     # Main tabs
