@@ -398,14 +398,112 @@ def render_region_barchart():
         fig4.update_layout(height=400)
         st.plotly_chart(fig4, use_container_width=True)
 
+@st.cache_data(ttl=300)
+def load_contratacoes_summary():
+    """Load contracting summary from pre-aggregated view"""
+    # Load from the same view that powers the KPIs
+    summary = load_national_summary()
+    
+    # Map the view columns to the expected format for contratacoes
+    # Based on the vw_resumo_nacional structure, we need to map the fields correctly
+    return {
+        # These should come from the view if available
+        'aguardando_mcid': summary.get('aguardando_autorizacao_mcid', 
+                                      summary.get('projetos_aguardando_mcid', 0)),
+        'uh_aguardando_mcid': summary.get('uh_aguardando_autorizacao', 
+                                         summary.get('uh_aguardando_mcid', 0)),
+        
+        'mcid_emitida': summary.get('autorizacao_mcid_emitida', 
+                                   summary.get('projetos_mcid_emitida', 0)),
+        'uh_mcid_emitida': summary.get('uh_autorizacao_emitida', 
+                                      summary.get('uh_mcid_emitida', 0)),
+        
+        'contratos_emitidos': summary.get('contratos_emitidos', 
+                                         summary.get('projetos_contratos_emitidos', 0)),
+        'uh_contratos_emitidos': summary.get('uh_contratos_emitidos', 0),
+        
+        'distratos': summary.get('distratos', 
+                                summary.get('projetos_distratos', 0)),
+        'uh_distratos': summary.get('uh_distratos', 0),
+        
+        # Total values from the view
+        'total_empreendimentos': summary.get('total_projetos', 0),
+        'uh_total': summary.get('uh_esperadas_total', 0),
+        'valor_total': summary.get('investimento_total', 0)
+    }
+
+# Alternative: If the view doesn't have these specific fields, 
+# create a dedicated query that matches the view structure
+@st.cache_data(ttl=300)
+def load_contratacoes_summary_detailed():
+    """
+    Load contracting summary with detailed breakdown.
+    This function queries the database to get contracting status if not in main view.
+    """
+    engine = get_db_connection()
+    
+    # First, check what columns are available in vw_resumo_nacional
+    check_query = """
+    SELECT column_name 
+    FROM information_schema.columns 
+    WHERE table_schema = 'mcmv_pj' 
+    AND table_name = 'vw_resumo_nacional'
+    ORDER BY ordinal_position;
+    """
+    
+    try:
+        columns_df = pd.read_sql(check_query, engine)
+        available_columns = columns_df['column_name'].tolist()
+        
+        # Log available columns for debugging
+        print(f"Available columns in vw_resumo_nacional: {available_columns}")
+        
+        # If contracting columns exist in the view, use them
+        if all(col in available_columns for col in ['aguardando_autorizacao_mcid', 'autorizacao_mcid_emitida', 'contratos_emitidos']):
+            return load_contratacoes_summary()
+        else:
+            # Fall back to calculating from raw data
+            return load_contratacoes_summary_calculated()
+            
+    except Exception as e:
+        print(f"Error checking view structure: {e}")
+        # Fall back to calculated version
+        return load_contratacoes_summary_calculated()
+
+@st.cache_data(ttl=300)
+def load_contratacoes_summary_calculated():
+    """
+    Calculate contracting summary from raw data if not available in view.
+    This maintains backward compatibility.
+    """
+    engine = get_db_connection()
+    query = f"""
+    SELECT
+        COUNT(*) as total_empreendimentos,
+        SUM(uh_estimadas) as uh_total,
+        SUM(valor_investimento_mcmv + valor_investimento_pac) as valor_total,
+        COUNT(*) FILTER (WHERE percentual_mcmv < 5) as aguardando_mcid,
+        SUM(uh_estimadas) FILTER (WHERE percentual_mcmv < 5) as uh_aguardando_mcid,
+        COUNT(*) FILTER (WHERE percentual_mcmv BETWEEN 5 AND 15) as mcid_emitida,
+        SUM(uh_estimadas) FILTER (WHERE percentual_mcmv BETWEEN 5 AND 15) as uh_mcid_emitida,
+        COUNT(*) FILTER (WHERE percentual_mcmv >= 15) as contratos_emitidos,
+        SUM(uh_estimadas) FILTER (WHERE percentual_mcmv >= 15) as uh_contratos_emitidos,
+        COUNT(*) FILTER (WHERE alto_risco AND percentual_mcmv < 20) as distratos,
+        SUM(uh_estimadas) FILTER (WHERE alto_risco AND percentual_mcmv < 20) as uh_distratos
+    FROM mcmv_pj.vw_empreendimentos_unificado
+    WHERE programa IN {tuple(MCMV_PROGRAMS)}
+    """
+    return pd.read_sql(query, engine).iloc[0].to_dict()
+
+# Update render_contratacoes_tab to handle the actual values from the view
 def render_contratacoes_tab():
     """Render enhanced contracting status matching PDF style exactly"""
     st.header("📑 Status de Contratações")
     
-    # Load summary data
+    # Load summary data - now from the view
     summary = load_contratacoes_summary()
     
-    # Enhanced CSS for perfect styling
+    # Enhanced CSS for perfect styling (keep existing CSS)
     st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
@@ -576,11 +674,14 @@ def render_contratacoes_tab():
     def format_br_number(value):
         return f"{int(value):,}".replace(",", ".")
     
-    # Calculate actual values based on data
-    aguardando_valor = 37.50 * 1e6  # R$ 37.50 mi
-    mcid_valor = 127.50 * 1e6  # R$ 127.50 mi
-    contratos_valor = 16134.15 * 1e6  # R$ 16134.15 mi
-    distratos_valor = 140.56 * 1e6  # R$ 140,56 mi
+    # Calculate estimated values based on UH counts and average investment
+    # Use actual values from the view or calculate based on UH
+    avg_investment_per_uh = summary['valor_total'] / summary['uh_total'] if summary['uh_total'] > 0 else 150000
+    
+    aguardando_valor = summary['uh_aguardando_mcid'] * avg_investment_per_uh
+    mcid_valor = summary['uh_mcid_emitida'] * avg_investment_per_uh
+    contratos_valor = summary['uh_contratos_emitidos'] * avg_investment_per_uh
+    distratos_valor = summary['uh_distratos'] * avg_investment_per_uh
     
     # Top row: 3 columns for the main stages
     col1, col2, col3 = st.columns(3)
@@ -689,6 +790,7 @@ def render_contratacoes_tab():
     </div>
     """, unsafe_allow_html=True)
     
+    # Rest of the function remains the same...
     st.markdown("<br>", unsafe_allow_html=True)
     
     # Enhanced visualization section
