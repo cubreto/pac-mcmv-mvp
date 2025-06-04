@@ -15,6 +15,7 @@ from datetime import datetime
 import numpy as np
 import urllib.request
 
+
 # Page config
 st.set_page_config(
     page_title="MCMV Analytics Dashboard - Enhanced",
@@ -398,62 +399,203 @@ def render_region_barchart():
         st.plotly_chart(fig4, use_container_width=True)
 
 def render_contratacoes_tab():
-    """Render enhanced contracting status with KPIs and visualization"""
+    """Render enhanced contracting status matching PDF style"""
     st.header("📑 Status de Contratações")
-
+    
+    # Load summary data
     summary = load_contratacoes_summary()
-
+    
+    # Custom CSS for better styling
+    st.markdown("""
+    <style>
+    .metric-container {
+        background-color: #f0f2f6;
+        padding: 20px;
+        border-radius: 10px;
+        text-align: center;
+        height: 180px;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+    }
+    .metric-title {
+        font-size: 14px;
+        font-weight: bold;
+        color: #0066cc;
+        text-transform: uppercase;
+        margin-bottom: 15px;
+    }
+    .metric-value {
+        font-size: 32px;
+        font-weight: bold;
+        color: #1f1f1f;
+        margin: 5px 0;
+    }
+    .metric-uh {
+        font-size: 24px;
+        font-weight: bold;
+        color: #333;
+        margin: 5px 0;
+    }
+    .metric-label {
+        font-size: 12px;
+        color: #666;
+        margin-top: 5px;
+    }
+    .metric-money {
+        font-size: 20px;
+        font-weight: bold;
+        color: #333;
+        margin-top: 10px;
+    }
+    .total-container {
+        background-color: #e8f4f8;
+        padding: 30px;
+        border-radius: 10px;
+        text-align: center;
+        margin-top: 20px;
+        border: 2px solid #0066cc;
+    }
+    .total-title {
+        font-size: 24px;
+        font-weight: bold;
+        color: #0066cc;
+        margin-bottom: 20px;
+    }
+    .aguardando-container {
+        background-color: #e3f2fd;
+        border-left: 5px solid #2196f3;
+    }
+    .mcid-emitida-container {
+        background-color: #fff8e1;
+        border-left: 5px solid #ffc107;
+    }
+    .contratos-container {
+        background-color: #e8f5e9;
+        border-left: 5px solid #4caf50;
+    }
+    .distratos-container {
+        background-color: #ffebee;
+        border-left: 5px solid #f44336;
+    }
+    </style>
+    """, unsafe_allow_html=True)
+    
     st.subheader("📊 Resumo de Contratações")
-
-    # Top 3 buckets (same layout)
+    
+    # Helper function to format Brazilian currency
+    def format_br_currency(value, unit="mi"):
+        if unit == "bi":
+            formatted = f"{value/1e9:,.2f}"
+        else:  # mi
+            formatted = f"{value/1e6:,.2f}"
+        # Replace dots with commas for Brazilian format
+        formatted = formatted.replace(",", "X").replace(".", ",").replace("X", ".")
+        return f"R$ {formatted} {unit}"
+    
+    # Helper function to format numbers Brazilian style
+    def format_br_number(value):
+        return f"{int(value):,}".replace(",", ".")
+    
+    # Top row: 3 columns
     col1, col2, col3 = st.columns(3)
-
+    
     with col1:
-        st.info("**AGUARDANDO AUTORIZAÇÃO MCID**")
-        st.metric("Empreendimentos", f"{int(summary['aguardando_mcid']):,}".replace(",", "."))
-        st.metric("UH", f"{int(summary['uh_aguardando_mcid']):,}".replace(",", "."))
-        if summary['aguardando_mcid'] > 0:
-            valor_est = (summary['uh_aguardando_mcid'] * 75000) / 1e6
-            st.metric("Valor Estimado", f"R$ {valor_est:.2f} mi")
-
+        aguardando_valor = (summary['uh_aguardando_mcid'] * 75000) if summary['aguardando_mcid'] > 0 else 0
+        st.markdown(f"""
+        <div class="metric-container aguardando-container">
+            <div class="metric-title">AGUARDANDO AUTORIZAÇÃO MCID</div>
+            <div>
+                <div class="metric-label">Empreendimentos</div>
+                <div class="metric-value">{format_br_number(summary['aguardando_mcid'])}</div>
+                <div class="metric-label">UH</div>
+                <div class="metric-uh">{format_br_number(summary['uh_aguardando_mcid'])}</div>
+                <div class="metric-label">Valor Estimado</div>
+                <div class="metric-money">{format_br_currency(aguardando_valor)}</div>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+    
     with col2:
-        st.warning("**AUTORIZAÇÃO MCID EMITIDA**")
-        st.metric("Empreendimentos", f"{int(summary['mcid_emitida']):,}".replace(",", "."))
-        st.metric("UH", f"{int(summary['uh_mcid_emitida']):,}".replace(",", "."))
-        if summary['mcid_emitida'] > 0:
-            valor_est = (summary['uh_mcid_emitida'] * 75000) / 1e6
-            st.metric("Valor Estimado", f"R$ {valor_est:.2f} mi")
-
+        mcid_valor = (summary['uh_mcid_emitida'] * 75000) if summary['mcid_emitida'] > 0 else 0
+        st.markdown(f"""
+        <div class="metric-container mcid-emitida-container">
+            <div class="metric-title">AUTORIZAÇÃO MCID EMITIDA</div>
+            <div>
+                <div class="metric-label">Empreendimentos</div>
+                <div class="metric-value">{format_br_number(summary['mcid_emitida'])}</div>
+                <div class="metric-label">UH</div>
+                <div class="metric-uh">{format_br_number(summary['uh_mcid_emitida'])}</div>
+                <div class="metric-label">Valor Estimado</div>
+                <div class="metric-money">{format_br_currency(mcid_valor)}</div>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+    
     with col3:
-        st.success("**CONTRATOS EMITIDOS**")
-        st.metric("Empreendimentos", f"{int(summary['contratos_emitidos']):,}".replace(",", "."))
-        st.metric("UH", f"{int(summary['uh_contratos_emitidos']):,}".replace(",", "."))
-        if summary['contratos_emitidos'] > 0:
-            valor_est = (summary['uh_contratos_emitidos'] * 75000) / 1e6
-            st.metric("Valor Estimado", f"R$ {valor_est:.2f} mi")
-
-    st.markdown("---")
-
-    # Distratos and Total
-    col1, col2 = st.columns(2)
+        contratos_valor = (summary['uh_contratos_emitidos'] * 75000) if summary['contratos_emitidos'] > 0 else 0
+        st.markdown(f"""
+        <div class="metric-container contratos-container">
+            <div class="metric-title">CONTRATOS EMITIDOS</div>
+            <div>
+                <div class="metric-label">Empreendimentos</div>
+                <div class="metric-value">{format_br_number(summary['contratos_emitidos'])}</div>
+                <div class="metric-label">UH</div>
+                <div class="metric-uh">{format_br_number(summary['uh_contratos_emitidos'])}</div>
+                <div class="metric-label">Valor Estimado</div>
+                <div class="metric-money">{format_br_currency(contratos_valor)}</div>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    # Add some spacing
+    st.markdown("<br>", unsafe_allow_html=True)
+    
+    # Bottom row: Distratos on the left, Total on the right
+    col1, col2, col3 = st.columns([1, 2, 1])
+    
     with col1:
-        st.error("**DISTRATOS**")
-        st.metric("Empreendimentos", f"{int(summary['distratos']):,}".replace(",", "."))
-        st.metric("UH", f"{int(summary['uh_distratos']):,}".replace(",", "."))
-
-    with col2:
-        st.markdown("**📊 TOTAL GERAL**")
-        st.metric("Total Empreendimentos", f"{int(summary['total_empreendimentos']):,}".replace(",", "."))
-        st.metric("Total UH", f"{int(summary['uh_total']):,}".replace(",", "."))
-        st.metric("Valor Total", f"R$ {summary['valor_total']/1e9:.2f} bi")
-
-    st.markdown("---")
-
-    # Add bar chart for visual summary
+        distratos_valor = (summary['uh_distratos'] * 75000) if summary['distratos'] > 0 else 0
+        st.markdown(f"""
+        <div class="metric-container distratos-container">
+            <div class="metric-title">DISTRATOS</div>
+            <div>
+                <div class="metric-label">Empreendimentos</div>
+                <div class="metric-value">{format_br_number(summary['distratos'])}</div>
+                <div class="metric-label">UH</div>
+                <div class="metric-uh">{format_br_number(summary['uh_distratos'])}</div>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    # Total section - full width below
+    st.markdown(f"""
+    <div class="total-container">
+        <div class="total-title">📊 TOTAL GERAL</div>
+        <div style="display: flex; justify-content: space-around; align-items: center;">
+            <div>
+                <div class="metric-label">Total Empreendimentos</div>
+                <div class="metric-value">{format_br_number(summary['total_empreendimentos'])}</div>
+            </div>
+            <div>
+                <div class="metric-label">Total UH</div>
+                <div class="metric-value">{format_br_number(summary['uh_total'])}</div>
+            </div>
+            <div>
+                <div class="metric-label">Valor Total</div>
+                <div class="metric-value">{format_br_currency(summary['valor_total'], 'bi')}</div>
+            </div>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    st.markdown("<br><br>", unsafe_allow_html=True)
+    
+    # Enhanced bar chart with better styling
     chart_df = pd.DataFrame({
         "Status": [
             "Aguardando MCID",
-            "MCID Emitida",
+            "MCID Emitida", 
             "Contratos Emitidos",
             "Distratos"
         ],
@@ -462,21 +604,91 @@ def render_contratacoes_tab():
             summary["uh_mcid_emitida"],
             summary["uh_contratos_emitidos"],
             summary["uh_distratos"]
+        ],
+        "Empreendimentos": [
+            summary["aguardando_mcid"],
+            summary["mcid_emitida"],
+            summary["contratos_emitidos"],
+            summary["distratos"]
         ]
     })
-
-    fig = px.bar(chart_df,
-                 x="Status",
-                 y="UH",
-                 text="UH",
-                 color="Status",
-                 title="📈 Unidades Habitacionais por Etapa",
-                 color_discrete_sequence=px.colors.qualitative.Pastel)
-
-    fig.update_traces(texttemplate="%{text:,.0f}", textposition="outside")
-    fig.update_layout(height=450, xaxis_title="", yaxis_title="UH")
-
+    
+    # Create figure with subplots
+    fig = make_subplots(
+        rows=1, cols=2,
+        subplot_titles=("Unidades Habitacionais por Etapa", "Empreendimentos por Etapa"),
+        horizontal_spacing=0.15
+    )
+    
+    # UH bar chart
+    fig.add_trace(
+        go.Bar(
+            x=chart_df["Status"],
+            y=chart_df["UH"],
+            text=[format_br_number(val) for val in chart_df["UH"]],
+            textposition="outside",
+            marker_color=['#2196f3', '#ffc107', '#4caf50', '#f44336'],
+            name="UH"
+        ),
+        row=1, col=1
+    )
+    
+    # Empreendimentos bar chart
+    fig.add_trace(
+        go.Bar(
+            x=chart_df["Status"],
+            y=chart_df["Empreendimentos"],
+            text=[format_br_number(val) for val in chart_df["Empreendimentos"]],
+            textposition="outside",
+            marker_color=['#2196f3', '#ffc107', '#4caf50', '#f44336'],
+            name="Empreendimentos",
+            showlegend=False
+        ),
+        row=1, col=2
+    )
+    
+    # Update layout
+    fig.update_layout(
+        height=450,
+        showlegend=False,
+        title_text="📈 Visão Geral das Contratações",
+        title_font_size=20,
+        title_x=0.5,
+        plot_bgcolor='rgba(0,0,0,0)',
+        paper_bgcolor='rgba(0,0,0,0)'
+    )
+    
+    # Update axes
+    fig.update_xaxes(title_text="", row=1, col=1)
+    fig.update_xaxes(title_text="", row=1, col=2)
+    fig.update_yaxes(title_text="UH", row=1, col=1)
+    fig.update_yaxes(title_text="Empreendimentos", row=1, col=2)
+    
+    # Add grid
+    fig.update_yaxes(showgrid=True, gridwidth=1, gridcolor='LightGray')
+    
     st.plotly_chart(fig, use_container_width=True)
+    
+    # Additional info section
+    st.markdown("---")
+    
+    # Progress indicators
+    col1, col2, col3 = st.columns(3)
+    
+    with col1:
+        progress_mcid = (summary['mcid_emitida'] / summary['total_empreendimentos'] * 100) if summary['total_empreendimentos'] > 0 else 0
+        st.metric("Taxa de Autorização MCID", f"{progress_mcid:.1f}%", 
+                  delta=f"+{summary['mcid_emitida']} empreendimentos")
+    
+    with col2:
+        progress_contratos = (summary['contratos_emitidos'] / summary['total_empreendimentos'] * 100) if summary['total_empreendimentos'] > 0 else 0
+        st.metric("Taxa de Contratação", f"{progress_contratos:.1f}%",
+                  delta=f"+{summary['contratos_emitidos']} empreendimentos")
+    
+    with col3:
+        taxa_distratos = (summary['distratos'] / summary['total_empreendimentos'] * 100) if summary['total_empreendimentos'] > 0 else 0
+        st.metric("Taxa de Distratos", f"{taxa_distratos:.1f}%",
+                  delta=f"{summary['distratos']} empreendimentos", delta_color="inverse")
 
 def render_suspensivas_tab():
     """Render suspensivas analysis"""
