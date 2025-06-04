@@ -398,39 +398,103 @@ def render_region_barchart():
         fig4.update_layout(height=400)
         st.plotly_chart(fig4, use_container_width=True)
 
+# Replace your current load_contratacoes_summary with this version
+# This uses the calculated approach that was working before
+
 @st.cache_data(ttl=300)
 def load_contratacoes_summary():
-    """Load contracting summary from pre-aggregated view"""
-    # Load from the same view that powers the KPIs
-    summary = load_national_summary()
+    """
+    Load contracting summary by calculating from raw data.
+    This is used because vw_resumo_nacional doesn't include contracting breakdown.
+    """
+    engine = get_db_connection()
     
-    # Map the view columns to the expected format for contratacoes
-    # Based on the vw_resumo_nacional structure, we need to map the fields correctly
-    return {
-        # These should come from the view if available
-        'aguardando_mcid': summary.get('aguardando_autorizacao_mcid', 
-                                      summary.get('projetos_aguardando_mcid', 0)),
-        'uh_aguardando_mcid': summary.get('uh_aguardando_autorizacao', 
-                                         summary.get('uh_aguardando_mcid', 0)),
+    query = f"""
+    SELECT
+        COUNT(*) as total_empreendimentos,
+        SUM(uh_estimadas) as uh_total,
+        SUM(COALESCE(valor_investimento_mcmv, 0) + COALESCE(valor_investimento_pac, 0)) as valor_total,
         
-        'mcid_emitida': summary.get('autorizacao_mcid_emitida', 
-                                   summary.get('projetos_mcid_emitida', 0)),
-        'uh_mcid_emitida': summary.get('uh_autorizacao_emitida', 
-                                      summary.get('uh_mcid_emitida', 0)),
+        COUNT(*) FILTER (WHERE percentual_mcmv < 5) as aguardando_mcid,
+        COALESCE(SUM(uh_estimadas) FILTER (WHERE percentual_mcmv < 5), 0) as uh_aguardando_mcid,
         
-        'contratos_emitidos': summary.get('contratos_emitidos', 
-                                         summary.get('projetos_contratos_emitidos', 0)),
-        'uh_contratos_emitidos': summary.get('uh_contratos_emitidos', 0),
+        COUNT(*) FILTER (WHERE percentual_mcmv >= 5 AND percentual_mcmv < 15) as mcid_emitida,
+        COALESCE(SUM(uh_estimadas) FILTER (WHERE percentual_mcmv >= 5 AND percentual_mcmv < 15), 0) as uh_mcid_emitida,
         
-        'distratos': summary.get('distratos', 
-                                summary.get('projetos_distratos', 0)),
-        'uh_distratos': summary.get('uh_distratos', 0),
+        COUNT(*) FILTER (WHERE percentual_mcmv >= 15) as contratos_emitidos,
+        COALESCE(SUM(uh_estimadas) FILTER (WHERE percentual_mcmv >= 15), 0) as uh_contratos_emitidos,
         
-        # Total values from the view
-        'total_empreendimentos': summary.get('total_projetos', 0),
-        'uh_total': summary.get('uh_esperadas_total', 0),
-        'valor_total': summary.get('investimento_total', 0)
-    }
+        COUNT(*) FILTER (WHERE alto_risco = true AND percentual_mcmv < 20) as distratos,
+        COALESCE(SUM(uh_estimadas) FILTER (WHERE alto_risco = true AND percentual_mcmv < 20), 0) as uh_distratos
+        
+    FROM mcmv_pj.vw_empreendimentos_unificado
+    WHERE programa IN {tuple(MCMV_PROGRAMS)}
+    """
+    
+    try:
+        result = pd.read_sql(query, engine)
+        summary = result.iloc[0].to_dict()
+        
+        # Cleanup & enforce data types
+        for k, v in summary.items():
+            summary[k] = int(v) if v is not None and not pd.isna(v) else 0
+            if 'valor' in k:
+                summary[k] = float(v) if v else 0.0
+                
+        return summary
+        
+    except Exception as e:
+        st.error(f"Erro ao carregar resumo de contratações: {str(e)}")
+        return {key: 0 for key in [
+            'total_empreendimentos', 'uh_total', 'valor_total',
+            'aguardando_mcid', 'uh_aguardando_mcid',
+            'mcid_emitida', 'uh_mcid_emitida',
+            'contratos_emitidos', 'uh_contratos_emitidos',
+            'distratos', 'uh_distratos'
+        ]}
+
+# Optional debug function - add this if you want to verify the data
+def debug_contratacoes_data():
+    """Debug function to verify contracting data distribution"""
+    engine = get_db_connection()
+    
+    st.write("### 📊 Debug: Contracting Data Distribution")
+    
+    # Phase distribution
+    debug_query = f"""
+    SELECT 
+        CASE 
+            WHEN percentual_mcmv < 5 THEN '1. Aguardando MCID (<5%)'
+            WHEN percentual_mcmv < 15 THEN '2. MCID Emitida (5-15%)'
+            ELSE '3. Contratos Emitidos (>=15%)'
+        END as fase,
+        COUNT(*) as projetos,
+        SUM(uh_estimadas) as total_uh,
+        AVG(percentual_mcmv) as avg_execution
+    FROM mcmv_pj.vw_empreendimentos_unificado
+    WHERE programa IN {tuple(MCMV_PROGRAMS)}
+    GROUP BY fase
+    ORDER BY fase;
+    """
+    
+    df_debug = pd.read_sql(debug_query, engine)
+    st.dataframe(df_debug, use_container_width=True)
+    
+    # Risk analysis
+    risk_query = f"""
+    SELECT 
+        COUNT(*) as total_projects,
+        COUNT(*) FILTER (WHERE alto_risco = true) as high_risk_projects,
+        COUNT(*) FILTER (WHERE alto_risco = true AND percentual_mcmv < 20) as distratos_candidates,
+        AVG(percentual_mcmv) as avg_execution_all,
+        AVG(percentual_mcmv) FILTER (WHERE alto_risco = true) as avg_execution_high_risk
+    FROM mcmv_pj.vw_empreendimentos_unificado
+    WHERE programa IN {tuple(MCMV_PROGRAMS)};
+    """
+    
+    df_risk = pd.read_sql(risk_query, engine)
+    st.write("### 🚨 Risk Analysis")
+    st.dataframe(df_risk, use_container_width=True)
 
 # Alternative: If the view doesn't have these specific fields, 
 # create a dedicated query that matches the view structure
@@ -1148,6 +1212,9 @@ def main():
         if st.button("🔄 Atualizar Dados"):
             st.cache_data.clear()
             st.rerun()
+        if st.button("🔧 Debug Contratações"):
+            debug_contratacoes_data()
+
     
     # Main tabs
     tabs = st.tabs([
