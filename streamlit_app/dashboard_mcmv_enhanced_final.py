@@ -1413,20 +1413,98 @@ def main():
     
     # Sidebar
     with st.sidebar:
-        st.header("ℹ️ Informações")
-        st.info(f"""
-        **Dados incluídos:**
-        - FAR: 791 projetos
-        - FDS: 109 projetos  
-        - RURAL: 438 projetos
-        - Faixas 1-3 e outros
-        
-        **Total:** 1,498 projetos MCMV
-        
-        **Última atualização:**
-        {datetime.now().strftime('%d/%m/%Y %H:%M')}
-        """)
-        
+        engine = get_db_connection()
+        project_counts = pd.read_sql(f"""
+            SELECT programa, COUNT(*) as count
+            FROM projeto_status
+            WHERE tipo_programa = 'MCMV-HIS'
+            GROUP BY programa
+            ORDER BY count DESC
+        """, engine)
+
+        # Calculate total
+        total_projects = project_counts['count'].sum()
+
+        # Professional sidebar display
+        st.markdown("""
+        <style>
+        .sidebar-info-box {
+            background-color: #f8f9fa;
+            border-left: 4px solid #0066cc;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            margin-bottom: 1rem;
+        }
+        .sidebar-header {
+            color: #0066cc;
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+        .program-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.5rem 0;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        .program-name {
+            font-weight: 500;
+            color: #333;
+        }
+        .program-count {
+            font-weight: 600;
+            color: #0066cc;
+        }
+        .total-box {
+            background-color: #e3f2fd;
+            padding: 0.75rem;
+            border-radius: 0.25rem;
+            margin-top: 0.5rem;
+            text-align: center;
+        }
+        .total-number {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #0066cc;
+        }
+        .update-time {
+            font-size: 0.85rem;
+            color: #666;
+            text-align: center;
+            margin-top: 0.5rem;
+        }
+        </style>
+        """, unsafe_allow_html=True)
+
+        st.markdown('<div class="sidebar-info-box">', unsafe_allow_html=True)
+        st.markdown('<div class="sidebar-header">📊 Dados Incluídos</div>', unsafe_allow_html=True)
+
+        # Display each program
+        for _, row in project_counts.iterrows():
+            st.markdown(f"""
+            <div class="program-item">
+                <span class="program-name">{row['programa']}</span>
+                <span class="program-count">{row['count']:,}</span>
+            </div>
+            """, unsafe_allow_html=True)
+
+        # Display total
+        st.markdown(f"""
+        <div class="total-box">
+            <div style="font-size: 0.9rem; color: #666;">Total de Projetos</div>
+            <div class="total-number">{total_projects:,}</div>
+            <div style="font-size: 0.85rem; color: #666;">MCMV</div>
+        </div>
+        """, unsafe_allow_html=True)
+
+        st.markdown(f"""
+        <div class="update-time">
+            🕐 Atualizado: {datetime.now().strftime('%d/%m/%Y às %H:%M')}
+        </div>
+        """, unsafe_allow_html=True)
+
+        st.markdown('</div>', unsafe_allow_html=True)
+                
         if st.button("🔄 Atualizar Dados"):
             st.cache_data.clear()
             st.rerun()

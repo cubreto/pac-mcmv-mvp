@@ -1,14 +1,13 @@
 #!/usr/bin/env python3
 """
-Main ETL script for PAC-MCMV MVP
-Loads Excel data + generates fake Habitação data, saves to database
+PAC-MCMV ETL Process - PRODUCTION VERSION (NO FAKE DATA)
+Fixed to remove fake data generation for client presentation
 """
 
-import sys
-import os
-from pathlib import Path
 import pandas as pd
 import logging
+import sys
+from pathlib import Path
 from dotenv import load_dotenv
 
 # Load environment variables
@@ -19,22 +18,18 @@ sys.path.append(str(Path(__file__).parent))
 
 from database import DatabaseManager
 from excel_loader import process_excel_files
-from fake_data_generator import generate_habitacao_data
+# REMOVED: from fake_data_generator import generate_habitacao_data
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 def run_etl():
-    """Main ETL process"""
+    """Main ETL process - PRODUCTION VERSION (Real MCMV data only)"""
     
-    logger.info("🚀 Starting PAC-MCMV ETL process...")
+    logger.info("🚀 Starting PAC-MCMV ETL process (PRODUCTION - No fake data)...")
     
     # Initialize database
     db = DatabaseManager()
-    
-    if not db.test_connection():
-        logger.error("❌ Database connection failed")
-        return False
     
     all_data = []
     
@@ -46,55 +41,39 @@ def run_etl():
         all_data.append(pac_df)
     except Exception as e:
         logger.warning(f"⚠️ Could not load Excel data: {e}")
-        logger.info("📊 Generating fake PAC data instead...")
-        from fake_data_generator import generate_pac_data
-        pac_df = generate_pac_data(400)
-        logger.info(f"✅ Generated {len(pac_df)} fake PAC records")
-        all_data.append(pac_df)
+        logger.info("⚠️ PRODUCTION MODE: No fake PAC data will be generated")
+        # REMOVED: Fake PAC data generation
     
-    # Generate fake Habitação data (placeholder until real data arrives)
-    logger.info("🏠 Generating fake Habitação data...")
-    habitacao_df = generate_habitacao_data(250) 
-    logger.info(f"✅ Generated {len(habitacao_df)} fake Habitação records")
-    all_data.append(habitacao_df)
+    # REMOVED: Fake Habitação data generation
+    logger.info("🏠 PRODUCTION MODE: Using only real MCMV data from HIS files")
+    logger.info("📋 Fake Habitação data generation DISABLED for client presentation")
     
-    # Combine all data
-    combined_df = pd.concat(all_data, ignore_index=True)
-    logger.info(f"📋 Combined dataset: {len(combined_df)} total records")
-    
-    # Save to database
-    logger.info("💾 Saving to database...")
+    # Load real MCMV data using the proper loader
     try:
-        db.save_dataframe(combined_df, 'projeto_status', if_exists='replace')
-        logger.info("✅ Data saved successfully")
-        
-        # Verify data
-        count = db.get_projeto_count()
-        logger.info(f"📊 Database now contains {count} projects")
-        
-        # Show summary by program type
-        summary = db.load_dataframe("""
-            SELECT tipo_programa, COUNT(*) as count 
-            FROM projeto_status 
-            GROUP BY tipo_programa
-        """)
-        
-        logger.info("📈 Data summary:")
-        for _, row in summary.iterrows():
-            logger.info(f"   {row['tipo_programa']}: {row['count']} projects")
-        
-        return True
-        
+        logger.info("📊 Loading real MCMV data from HIS files...")
+        # Use the MCMV loader that processes FAR, FDS, RURAL
+        from load_mcmv_final import load_mcmv_to_projeto_status
+        load_mcmv_to_projeto_status()
+        logger.info("✅ Real MCMV data loaded successfully")
     except Exception as e:
-        logger.error(f"❌ Database save failed: {e}")
-        return False
+        logger.error(f"❌ Failed to load real MCMV data: {e}")
+        raise
+    
+    # Combine and save only real data
+    if all_data:
+        combined_df = pd.concat(all_data, ignore_index=True)
+        logger.info(f"💾 Saving {len(combined_df)} total records (REAL DATA ONLY)")
+        
+        try:
+            db.save_dataframe(combined_df, 'projeto_status', if_exists='append')
+            logger.info("✅ Real data saved successfully")
+        except Exception as e:
+            logger.error(f"❌ Error saving data: {e}")
+            raise
+    else:
+        logger.info("📊 Only MCMV data loaded (no PAC Excel data found)")
+    
+    logger.info("🎯 ETL Complete - PRODUCTION READY (Real data only)")
 
 if __name__ == "__main__":
-    success = run_etl()
-    if success:
-        print("\n🎉 ETL completed successfully!")
-        print("You can now run the Streamlit dashboard:")
-        print("   streamlit run streamlit_app/dashboard.py")
-    else:
-        print("\n💥 ETL failed - check the logs above")
-        sys.exit(1)
+    run_etl()

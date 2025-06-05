@@ -48,6 +48,27 @@ class DatabaseManager:
         """Execute a raw SQL query"""
         with self.engine.connect() as conn:
             return conn.execute(text(query), params or {})
+
+
+
+    # ───────────────────────────────────────────────
+    # helper readers  ←  ★ ADD THESE ★
+    # ───────────────────────────────────────────────
+    def fetch_one(self, sql: str, params: dict | None = None):
+        """Return a single row as a dict (raises if none)."""
+        with self.engine.connect() as conn:
+            row = conn.execute(text(sql), params or {}).mappings().first()
+            if row is None:
+                raise ValueError("query returned no rows")
+            return dict(row)
+
+    def fetch_all(self, sql: str, params: dict | None = None):
+        """Return a list of rows as dicts."""
+        with self.engine.connect() as conn:
+            return [
+                dict(r) for r in conn.execute(text(sql), params or {}).mappings()
+            ]
+
     
     def load_dataframe(self, query, params=None):
         """Load data into pandas DataFrame"""
