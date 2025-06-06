@@ -1,7 +1,7 @@
 # Save as: streamlit_app/dashboard_mcmv_enhanced_final.py
 #!/usr/bin/env python3
 """
-MCMV Enhanced Dashboard Final - With working map and fixed queries
+MCMV Enhanced Dashboard Final - Complete with all KPIs and new analytics
 """
 import streamlit as st
 import pandas as pd
@@ -26,21 +26,328 @@ st.set_page_config(
 )
 
 # Custom CSS
+# Enhanced Custom CSS with forced light theme
+# Fixed Custom CSS - Light theme without breaking plots
+# Stunningly Beautiful & Sleek Dashboard CSS
 st.markdown("""
 <style>
+    /* Import elegant fonts */
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+    
+    /* Stunning app background with subtle gradient */
+    .stApp {
+        background: linear-gradient(135deg, #f8fafc 0%, #ffffff 100%) !important;
+        color: #1e293b !important;
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif !important;
+        font-weight: 400;
+    }
+    
+    /* Beautiful main container */
+    .main .block-container {
+        background-color: transparent !important;
+        padding-top: 2rem;
+        max-width: 1200px;
+    }
+    
+    /* Elegant sidebar with matching theme */
+    .css-1d391kg, .css-1cypcdb, .css-17eq0hr {
+        background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%) !important;
+        border-right: 1px solid #e2e8f0 !important;
+    }
+    
+    /* Sidebar text consistency */
+    .css-1d391kg .stMarkdown, .css-1d391kg h1, .css-1d391kg h2, .css-1d391kg h3 {
+        color: #1e293b !important;
+    }
+    
+    /* Absolutely stunning metric containers */
     div[data-testid="metric-container"] {
-        background-color: #f0f2f6;
-        border: 1px solid #e0e0e0;
-        padding: 15px;
-        border-radius: 10px;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+        border: 1px solid #e2e8f0;
+        padding: 28px;
+        border-radius: 20px;
+        box-shadow: 
+            0 4px 20px rgba(15, 23, 42, 0.04), 
+            0 2px 10px rgba(15, 23, 42, 0.06),
+            0 1px 4px rgba(15, 23, 42, 0.08);
+        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        backdrop-filter: blur(12px);
+        position: relative;
+        overflow: hidden;
     }
-    .stTabs [data-baseweb="tab-list"] button [data-testid="stMarkdownContainer"] p {
-        font-size: 16px;
+    
+    /* Beautiful hover effects */
+    div[data-testid="metric-container"]:hover {
+        transform: translateY(-6px) scale(1.02);
+        box-shadow: 
+            0 20px 40px rgba(15, 23, 42, 0.12), 
+            0 8px 20px rgba(15, 23, 42, 0.08),
+            0 4px 8px rgba(15, 23, 42, 0.06);
+        border-color: #cbd5e1;
     }
+    
+    /* Gorgeous accent line on metrics */
+    div[data-testid="metric-container"]:before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: linear-gradient(90deg, #3b82f6 0%, #06b6d4 50%, #10b981 100%);
+        opacity: 0.8;
+        border-radius: 20px 20px 0 0;
+    }
+    
+    /* Sleek tab system */
+    .stTabs [data-baseweb="tab-list"] {
+        gap: 6px;
+        background: linear-gradient(135deg, #f1f5f9 0%, #ffffff 100%);
+        border-radius: 20px;
+        padding: 12px;
+        border: 1px solid #e2e8f0;
+        box-shadow: 
+            0 4px 16px rgba(15, 23, 42, 0.04),
+            0 2px 8px rgba(15, 23, 42, 0.02);
+        backdrop-filter: blur(8px);
+    }
+    
+    .stTabs [data-baseweb="tab-list"] button {
+        background-color: transparent !important;
+        border-radius: 16px !important;
+        color: #64748b !important;
+        font-weight: 500;
+        font-size: 14px;
+        padding: 14px 24px !important;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        border: none !important;
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .stTabs [data-baseweb="tab-list"] button:hover {
+        background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%) !important;
+        color: #334155 !important;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(15, 23, 42, 0.06);
+    }
+    
+    .stTabs [data-baseweb="tab-list"] button[aria-selected="true"] {
+        background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%) !important;
+        color: #1e293b !important;
+        font-weight: 600;
+        box-shadow: 
+            0 6px 20px rgba(15, 23, 42, 0.12), 
+            0 3px 8px rgba(15, 23, 42, 0.08);
+        border: 1px solid #e2e8f0 !important;
+        transform: translateY(-1px);
+    }
+    
+    /* Selected tab accent */
+    .stTabs [data-baseweb="tab-list"] button[aria-selected="true"]:before {
+        content: '';
+        position: absolute;
+        bottom: 0;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 60%;
+        height: 3px;
+        background: linear-gradient(90deg, #3b82f6, #06b6d4);
+        border-radius: 2px;
+    }
+    
+    /* Stunning headers with gradient text */
+    h1 {
+        font-size: 2.5rem !important;
+        font-weight: 700 !important;
+        background: linear-gradient(135deg, #1e293b 0%, #475569 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        letter-spacing: -0.02em;
+        margin-bottom: 1.5rem !important;
+    }
+    
+    h2, h3 {
+        color: #1e293b !important;
+        font-weight: 600 !important;
+        letter-spacing: -0.015em;
+    }
+    
+    /* Beautiful KPI highlight boxes */
+    .new-kpi-highlight {
+        background: linear-gradient(135deg, #dbeafe 0%, #ffffff 100%);
+        border: 1px solid #93c5fd;
+        border-left: 5px solid #3b82f6;
+        padding: 28px;
+        border-radius: 20px;
+        margin: 24px 0;
+        box-shadow: 
+            0 8px 24px rgba(59, 130, 246, 0.08),
+            0 4px 12px rgba(59, 130, 246, 0.04);
+        position: relative;
+        overflow: hidden;
+        backdrop-filter: blur(8px);
+    }
+    
+    .new-kpi-highlight:before {
+        content: '';
+        position: absolute;
+        top: 0;
+        right: 0;
+        width: 100px;
+        height: 100px;
+        background: radial-gradient(circle, rgba(59, 130, 246, 0.1), transparent 70%);
+        border-radius: 50%;
+        transform: translate(30px, -30px);
+    }
+    
+    /* Elegant critical alerts */
+    .critical-alert {
+        background: linear-gradient(135deg, #fef2f2 0%, #ffffff 100%);
+        border: 1px solid #fca5a5;
+        border-left: 5px solid #ef4444;
+        padding: 28px;
+        border-radius: 20px;
+        margin: 24px 0;
+        box-shadow: 
+            0 8px 24px rgba(239, 68, 68, 0.08),
+            0 4px 12px rgba(239, 68, 68, 0.04);
+        position: relative;
+        overflow: hidden;
+        backdrop-filter: blur(8px);
+    }
+    
+    .critical-alert:before {
+        content: '';
+        position: absolute;
+        top: 0;
+        right: 0;
+        width: 100px;
+        height: 100px;
+        background: radial-gradient(circle, rgba(239, 68, 68, 0.1), transparent 70%);
+        border-radius: 50%;
+        transform: translate(30px, -30px);
+    }
+    
+    /* Spectacular investment summary */
+    .investment-summary {
+        background: linear-gradient(135deg, #f0fdf4 0%, #ffffff 100%);
+        border: 2px solid #86efac;
+        border-radius: 24px;
+        padding: 40px;
+        margin: 32px 0;
+        text-align: center;
+        box-shadow: 
+            0 12px 32px rgba(34, 197, 94, 0.12),
+            0 6px 16px rgba(34, 197, 94, 0.06),
+            0 3px 8px rgba(34, 197, 94, 0.04);
+        position: relative;
+        overflow: hidden;
+        backdrop-filter: blur(12px);
+    }
+    
+    .investment-summary:before {
+        content: '';
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 200px;
+        height: 200px;
+        background: radial-gradient(circle, rgba(34, 197, 94, 0.08), transparent 60%);
+        border-radius: 50%;
+    }
+    
+    .investment-summary h3 {
+        color: #059669 !important;
+        font-size: 1.75rem !important;
+        margin-bottom: 16px;
+        font-weight: 700;
+        position: relative;
+        z-index: 1;
+    }
+    
+    /* Gorgeous financial styling */
+    .financial-positive {
+        color: #059669 !important;
+        font-weight: 700;
+        text-shadow: 0 1px 2px rgba(5, 150, 105, 0.1);
+    }
+    
+    .financial-negative {
+        color: #dc2626 !important;
+        font-weight: 700;
+        text-shadow: 0 1px 2px rgba(220, 38, 38, 0.1);
+    }
+    
+    /* Smooth page transitions */
+    @keyframes fadeInUp {
+        from {
+            opacity: 0;
+            transform: translateY(30px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    
+    .main .block-container > div {
+        animation: fadeInUp 0.8s ease-out;
+    }
+    
+    /* Beautiful form elements */
+    .stSelectbox label {
+        color: #374151 !important;
+        font-weight: 500;
+        font-size: 14px;
+    }
+    
+    /* Elegant loading states */
+    .stSpinner > div {
+        border-color: #3b82f6 !important;
+    }
+    
+    /* Perfect mobile experience */
+    @media (max-width: 768px) {
+        div[data-testid="metric-container"] {
+            padding: 24px;
+            margin: 16px 0;
+            border-radius: 16px;
+        }
+        
+        .new-kpi-highlight, .critical-alert {
+            padding: 24px;
+            margin: 20px 0;
+            border-radius: 16px;
+        }
+        
+        .investment-summary {
+            padding: 32px;
+            margin: 24px 0;
+            border-radius: 20px;
+        }
+        
+        h1 {
+            font-size: 2rem !important;
+        }
+        
+        .stTabs [data-baseweb="tab-list"] {
+            padding: 8px;
+        }
+        
+        .stTabs [data-baseweb="tab-list"] button {
+            padding: 12px 16px !important;
+            font-size: 13px;
+        }
+    }
+    
+    /* ABSOLUTELY NO INTERFERENCE WITH CHARTS/MAPS */
+    /* Plotly, Folium, and all visualization libraries remain untouched */
+    
 </style>
 """, unsafe_allow_html=True)
-
 # Define all MCMV programs
 MCMV_PROGRAMS = [
     'FAR', 'FDS', 'RURAL',
@@ -76,6 +383,8 @@ def load_brazil_geojson():
     except Exception as e:
         st.warning(f"Não foi possível carregar GeoJSON: {e}")
         return None
+
+# ===== ORIGINAL DATA LOADING FUNCTIONS =====
 
 @st.cache_data(ttl=300)
 def load_national_summary():
@@ -199,9 +508,697 @@ def load_financial_flow():
     """
     return pd.read_sql(query, engine)
 
+# ===== NEW KPI DATA LOADING FUNCTIONS =====
+
+@st.cache_data(ttl=300)
+def load_beneficiary_summary():
+    """Load national beneficiary summary"""
+    engine = get_db_connection()
+    try:
+        query = "SELECT * FROM mcmv_pf.vw_beneficiarios_resumo_nacional"
+        return pd.read_sql(query, engine).iloc[0]
+    except Exception as e:
+        st.error(f"Erro ao carregar resumo de beneficiários: {e}")
+        return pd.Series({
+            'projetos_com_beneficiarios': 0,
+            'total_beneficiarios': 0,
+            'total_mulheres': 0,
+            'total_homens': 0,
+            'percentual_mulheres': 0,
+            'renda_media_sm_nacional': 0,
+            'valor_medio_imovel_nacional': 0,
+            'valor_total_financiado': 0,
+            'sem_pagamento': 0
+        })
+
+@st.cache_data(ttl=300)
+def load_beneficiary_analytics():
+    """Load beneficiary analytics by project"""
+    engine = get_db_connection()
+    try:
+        query = """
+        SELECT ba."NU_APF", ba.total_beneficiarios, ba.beneficiarias_mulheres, 
+               ba.beneficiarios_homens, ba.percentual_mulheres, ba.renda_media_sm,
+               ba.valor_medio_imovel, ba.valor_total_imoveis,
+               ps.uf, ps.nome_empreendimento, ps.programa
+        FROM mcmv_pf.vw_beneficiarios_analytics ba
+        JOIN projeto_status ps ON ba."NU_APF"::text = ps.proposta
+        WHERE ps.tipo_programa = 'MCMV-HIS'
+        ORDER BY ba.total_beneficiarios DESC
+        """
+        return pd.read_sql(query, engine)
+    except Exception as e:
+        st.error(f"Erro ao carregar analytics de beneficiários: {e}")
+        return pd.DataFrame()
+
+@st.cache_data(ttl=300)
+def load_timeline_analysis():
+    """Load timeline and delay analysis"""
+    engine = get_db_connection()
+    try:
+        query = "SELECT * FROM mcmv_pj.vw_analise_prazos ORDER BY programa, uf"
+        return pd.read_sql(query, engine)
+    except Exception as e:
+        st.error(f"Erro ao carregar análise de prazos: {e}")
+        return pd.DataFrame()
+
+@st.cache_data(ttl=300)
+def load_social_work():
+    """Load social work tracking"""
+    engine = get_db_connection()
+    try:
+        query = "SELECT * FROM mcmv_pf.vw_trabalho_social ORDER BY programa, uf"
+        return pd.read_sql(query, engine)
+    except Exception as e:
+        st.error(f"Erro ao carregar trabalho social: {e}")
+        return pd.DataFrame()
+
+@st.cache_data(ttl=300)
+def load_financial_execution():
+    """Load financial execution data"""
+    engine = get_db_connection()
+    try:
+        query = "SELECT * FROM financeiro.vw_execucao_financeira ORDER BY programa, uf"
+        return pd.read_sql(query, engine)
+    except Exception as e:
+        st.error(f"Erro ao carregar execução financeira: {e}")
+        return pd.DataFrame()
+
+@st.cache_data(ttl=300)
+def load_program_summary():
+    """Load program performance summary"""
+    engine = get_db_connection()
+    try:
+        query = "SELECT * FROM mcmv_pj.vw_resumo_programa"
+        return pd.read_sql(query, engine)
+    except Exception as e:
+        st.error(f"Erro ao carregar resumo de programas: {e}")
+        return pd.DataFrame()
+
+@st.cache_data(ttl=300)
+def load_state_performance():
+    """Load state performance data"""
+    engine = get_db_connection()
+    try:
+        query = "SELECT * FROM mcmv_pj.vw_desempenho_por_estado ORDER BY total_projetos DESC"
+        return pd.read_sql(query, engine)
+    except Exception as e:
+        st.error(f"Erro ao carregar desempenho por estado: {e}")
+        return pd.DataFrame()
+
+# ===== NEW KPI RENDERING FUNCTIONS =====
+
+def render_beneficiarios_tab():
+    """Render beneficiary analytics tab"""
+    st.header("👥 Análise de Beneficiários")
+    
+    # Load data
+    summary = load_beneficiary_summary()
+    analytics = load_beneficiary_analytics()
+    
+    # Dynamic critical alerts
+    total_beneficiaries = summary['total_beneficiarios'] if not summary.empty else 0
+    total_women = summary['total_mulheres'] if not summary.empty else 0
+    pct_women = summary['percentual_mulheres'] if not summary.empty else 0
+    sem_pagamento = summary['sem_pagamento'] if not summary.empty else 0
+    pct_sem_pagamento = (sem_pagamento / total_beneficiaries * 100) if total_beneficiaries > 0 else 0
+    
+    st.markdown(f"""
+    <div class="critical-alert">
+        <h4>🚨 Achados Críticos - Beneficiários</h4>
+        <ul>
+            <li><strong>{total_beneficiaries:,} famílias</strong> cadastradas como beneficiárias (programa RURAL)</li>
+            <li><strong>{pct_women:.1f}% são mulheres</strong> chefes de família aguardando habitação</li>
+            <li><strong>{pct_sem_pagamento:.1f}% sem registros de pagamento</strong> (possível questão de dados ou atrasos)</li>
+            <li><strong>Renda média familiar:</strong> Dados inconsistentes ({summary.get('renda_media_sm_nacional', 0):.1f} SM registrados)</li>
+        </ul>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    # KPI Metrics
+    col1, col2, col3, col4 = st.columns(4)
+    
+    with col1:
+        st.metric(
+            "Total Beneficiários", 
+            f"{int(summary['total_beneficiarios']):,}",
+            delta=f"{int(summary['projetos_com_beneficiarios'])} projetos"
+        )
+    
+    with col2:
+        st.metric(
+            "Mulheres Chefes de Família", 
+            f"{summary['percentual_mulheres']:.1f}%",
+            delta=f"{int(summary['total_mulheres']):,} beneficiárias"
+        )
+    
+    with col3:
+        st.metric(
+            "Valor Médio Imóvel", 
+            f"R$ {summary['valor_medio_imovel_nacional']:,.0f}",
+            delta=f"R$ {summary['valor_total_financiado']/1e9:.2f}B total"
+        )
+    
+    with col4:
+        st.metric(
+            "Sem Pagamento", 
+            f"{int(summary['sem_pagamento']):,}",
+            delta="100% dos beneficiários",
+            delta_color="inverse"
+        )
+    
+    # Gender Distribution Chart
+    st.subheader("📊 Distribuição por Gênero")
+    col1, col2 = st.columns([2, 1])
+    
+    with col1:
+        gender_data = pd.DataFrame({
+            'Gênero': ['Mulheres', 'Homens'],
+            'Quantidade': [summary['total_mulheres'], summary['total_homens']],
+            'Percentual': [summary['percentual_mulheres'], 100 - summary['percentual_mulheres']]
+        })
+        
+        fig = px.pie(gender_data, values='Quantidade', names='Gênero', 
+                     title="Beneficiários por Gênero",
+                     color_discrete_map={'Mulheres': '#FF69B4', 'Homens': '#4169E1'})
+        st.plotly_chart(fig, use_container_width=True)
+    
+    with col2:
+        st.info(f"""
+        **Impacto de Gênero:**
+        
+        🏠 {int(summary['total_mulheres']):,} mulheres chefes de família aguardando habitação
+        
+        📊 {summary['percentual_mulheres']:.1f}% dos beneficiários são mulheres
+        
+        💰 R$ {summary['valor_total_financiado']/1e6:.0f} milhões em financiamentos
+        
+        ⚠️ Alinhado com política de priorização de mulheres chefes de família
+        """)
+    
+    # Top Projects by Beneficiaries
+    if not analytics.empty:
+        st.subheader("🏘️ Projetos com Mais Beneficiários")
+        top_projects = analytics.head(10)
+        fig = px.bar(top_projects, x='total_beneficiarios', y='nome_empreendimento',
+                     orientation='h', title="Top 10 Projetos por Número de Beneficiários",
+                     color='percentual_mulheres', color_continuous_scale='RdYlBu_r',
+                     hover_data=['uf', 'programa'])
+        fig.update_layout(height=400)
+        st.plotly_chart(fig, use_container_width=True)
+        
+        # Beneficiary data table
+        st.subheader("📋 Dados Detalhados de Beneficiários")
+        display_analytics = analytics[['nome_empreendimento', 'uf', 'programa', 'total_beneficiarios', 
+                                     'beneficiarias_mulheres', 'percentual_mulheres', 'valor_medio_imovel']].copy()
+        display_analytics.columns = ['Empreendimento', 'UF', 'Programa', 'Total Beneficiários', 
+                                    'Mulheres', '% Mulheres', 'Valor Médio Imóvel']
+        st.dataframe(display_analytics, use_container_width=True, hide_index=True)
+
+def render_prazos_tab():
+    """Render timeline and delays analysis"""
+    st.header("⏱️ Análise de Prazos e Atrasos")
+    
+    # Load data
+    timeline = load_timeline_analysis()
+    
+    if timeline.empty:
+        st.warning("Nenhum dado de prazo disponível")
+        return
+    
+    # Calculate dynamic metrics
+    started_projects = timeline['projetos_iniciados'].sum()
+    not_started = timeline['projetos_nao_iniciados'].sum()
+    total_projects = started_projects + not_started
+    pct_started = (started_projects / total_projects * 100) if total_projects > 0 else 0
+    pct_not_started = (not_started / total_projects * 100) if total_projects > 0 else 0
+    
+    # Calculate program-specific percentages
+    far_data = timeline[timeline['programa'] == 'FAR']
+    fds_data = timeline[timeline['programa'] == 'FDS'] 
+    rural_data = timeline[timeline['programa'] == 'RURAL']
+    
+    far_started_pct = (far_data['projetos_iniciados'].sum() / (far_data['projetos_iniciados'].sum() + far_data['projetos_nao_iniciados'].sum()) * 100) if not far_data.empty else 0
+    fds_started_pct = (fds_data['projetos_iniciados'].sum() / (fds_data['projetos_iniciados'].sum() + fds_data['projetos_nao_iniciados'].sum()) * 100) if not fds_data.empty else 0
+    rural_started_pct = (rural_data['projetos_iniciados'].sum() / (rural_data['projetos_iniciados'].sum() + rural_data['projetos_nao_iniciados'].sum()) * 100) if not rural_data.empty else 0
+    
+    # Dynamic critical findings alert
+    st.markdown(f"""
+    <div class="critical-alert">
+        <h4>🚨 Achados Críticos - Prazos</h4>
+        <ul>
+            <li><strong>{started_projects:,} projetos iniciados</strong> ({pct_started:.1f}% do total)</li>
+            <li><strong>{not_started:,} projetos NÃO iniciados</strong> ({pct_not_started:.1f}% do total)</li>
+            <li><strong>FDS: {fds_started_pct:.1f}% iniciados</strong> vs FAR: {far_started_pct:.1f}% vs RURAL: {rural_started_pct:.1f}%</li>
+            <li><strong>Projetos com datas recentes</strong> (2024-2025) mas baixo progresso</li>
+        </ul>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    # Summary metrics
+    col1, col2, col3, col4 = st.columns(4)
+    
+    with col1:
+        st.metric(
+            "Projetos Iniciados",
+            f"{started_projects:,}",
+            delta=f"{(started_projects/total_projects*100):.1f}% do total"
+        )
+    
+    with col2:
+        st.metric(
+            "Projetos Não Iniciados",
+            f"{not_started:,}",
+            delta=f"{(not_started/total_projects*100):.1f}% do total",
+            delta_color="inverse"
+        )
+    
+    with col3:
+        stalled_6m = timeline['sem_progresso_6_meses'].sum()
+        st.metric(
+            "Paralisados 6+ Meses",
+            f"{stalled_6m:,}",
+            delta="Requer intervenção" if stalled_6m > 0 else "Nenhum"
+        )
+    
+    with col4:
+        stalled_1y = timeline['paralisados_1_ano'].sum()
+        st.metric(
+            "Paralisados 1+ Ano",
+            f"{stalled_1y:,}",
+            delta="Crítico" if stalled_1y > 0 else "Nenhum"
+        )
+    
+    # Timeline by Program
+    st.subheader("📈 Status por Programa")
+    program_summary = timeline.groupby('programa').agg({
+        'projetos_iniciados': 'sum',
+        'projetos_nao_iniciados': 'sum',
+        'sem_progresso_6_meses': 'sum',
+        'paralisados_1_ano': 'sum',
+        'media_dias_em_obra': 'mean'
+    }).round(0)
+    
+    # Reshape for plotting
+    plot_data = program_summary[['projetos_iniciados', 'projetos_nao_iniciados']].reset_index()
+    plot_data = plot_data.melt(id_vars='programa', var_name='Status', value_name='Quantidade')
+    plot_data['Status'] = plot_data['Status'].map({
+        'projetos_iniciados': 'Iniciados',
+        'projetos_nao_iniciados': 'Não Iniciados'
+    })
+    
+    fig = px.bar(plot_data, x='programa', y='Quantidade', color='Status',
+                 title="Projetos Iniciados vs Não Iniciados por Programa",
+                 color_discrete_map={'Iniciados': '#2E8B57', 'Não Iniciados': '#DC143C'})
+    st.plotly_chart(fig, use_container_width=True)
+    
+    # State Analysis
+    st.subheader("🗺️ Análise por Estado")
+    state_data = timeline[timeline['uf'].notna()]
+    
+    if not state_data.empty:
+        # Calculate percentage not started
+        state_data = state_data.copy()
+        state_data['total_projetos_calc'] = state_data['projetos_iniciados'] + state_data['projetos_nao_iniciados']
+        state_data['pct_nao_iniciados'] = (state_data['projetos_nao_iniciados'] / 
+                                          state_data['total_projetos_calc'] * 100).round(1)
+        
+        # Top states with highest percentage of non-started projects
+        worst_states = state_data.nlargest(10, 'pct_nao_iniciados')
+        
+        fig = px.bar(worst_states, x='uf', y='pct_nao_iniciados',
+                     title="Estados com Maior % de Projetos Não Iniciados",
+                     color='pct_nao_iniciados', color_continuous_scale='Reds')
+        fig.update_layout(xaxis_title="Estado", yaxis_title="% Projetos Não Iniciados")
+        st.plotly_chart(fig, use_container_width=True)
+        
+        # Timeline details table
+        st.subheader("📋 Detalhamento de Prazos por Estado/Programa")
+        display_timeline = timeline[['programa', 'uf', 'total_projetos', 'projetos_iniciados', 
+                                   'projetos_nao_iniciados', 'primeira_obra_iniciada', 'ultima_obra_iniciada']].copy()
+        display_timeline.columns = ['Programa', 'UF', 'Total', 'Iniciados', 'Não Iniciados', 
+                                   'Primeira Obra', 'Última Obra']
+        st.dataframe(display_timeline, use_container_width=True, hide_index=True)
+
+def render_trabalho_social_tab():
+    """Render social work tracking"""
+    st.header("📚 Trabalho Social")
+    
+    # Load data
+    social_work = load_social_work()
+    
+    if social_work.empty:
+        st.warning("Nenhum dado de trabalho social disponível")
+        return
+    
+    # Critical findings
+    ts_ahead = (social_work['percentual_ts'] > social_work['percentual_obra']).sum()
+    total_ts_projects = len(social_work)
+    avg_ts = social_work['percentual_ts'].mean()
+    avg_obra = social_work['percentual_obra'].mean()
+    
+    st.markdown(f"""
+    <div class="new-kpi-highlight">
+        <h4>📊 Insights do Trabalho Social</h4>
+        <ul>
+            <li><strong>{total_ts_projects} projetos</strong> com programas de trabalho social ativos</li>
+            <li><strong>TS adiantado em {ts_ahead} projetos</strong> ({(ts_ahead/total_ts_projects*100):.1f}%)</li>
+            <li><strong>Execução média TS: {avg_ts:.1f}%</strong> vs Obra física: {avg_obra:.1f}%</li>
+            <li><strong>FDS e RURAL</strong> únicos programas com trabalho social estruturado</li>
+        </ul>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    # Summary metrics
+    col1, col2, col3 = st.columns(3)
+    
+    with col1:
+        st.metric(
+            "Média Execução TS",
+            f"{avg_ts:.1f}%",
+            delta="Trabalho Social"
+        )
+    
+    with col2:
+        st.metric(
+            "Média Execução Obra",
+            f"{avg_obra:.1f}%",
+            delta="Construção Física"
+        )
+    
+    with col3:
+        st.metric(
+            "TS Adiantado",
+            f"{ts_ahead}/{total_ts_projects}",
+            delta=f"{(ts_ahead/total_ts_projects*100):.1f}% dos projetos"
+        )
+    
+    # TS vs Construction Progress
+    st.subheader("📊 Trabalho Social vs Execução da Obra")
+    
+    # Scatter plot
+    fig = px.scatter(social_work, x='percentual_obra', y='percentual_ts', 
+                     color='programa', size='percentual_ts',
+                     title="Trabalho Social vs Progresso da Obra",
+                     hover_data=['nome_empreendimento', 'uf', 'status_ts_obra'])
+    
+    # Add diagonal line (perfect alignment)
+    fig.add_shape(type="line", x0=0, y0=0, x1=100, y1=100,
+                  line=dict(color="red", width=2, dash="dash"),
+                  name="Alinhamento Perfeito")
+    
+    fig.update_layout(
+        xaxis_title="% Execução da Obra",
+        yaxis_title="% Execução do Trabalho Social"
+    )
+    st.plotly_chart(fig, use_container_width=True)
+    
+    # Status breakdown
+    st.subheader("📈 Status do Trabalho Social")
+    status_summary = social_work['status_ts_obra'].value_counts()
+    
+    col1, col2 = st.columns([2, 1])
+    
+    with col1:
+        fig = px.pie(values=status_summary.values, names=status_summary.index,
+                     title="Distribuição do Status TS vs Obra",
+                     color_discrete_sequence=['#2E8B57', '#FFD700', '#DC143C'])
+        st.plotly_chart(fig, use_container_width=True)
+    
+    with col2:
+        st.info(f"""
+        **Status Summary:**
+        
+        📈 **TS Adiantado**: {status_summary.get('TS Adiantado', 0)} projetos
+        
+        ⚖️ **TS Alinhado**: {status_summary.get('TS Alinhado', 0)} projetos
+        
+        📉 **TS Atrasado**: {status_summary.get('TS Atrasado', 0)} projetos
+        
+        💡 **Insight**: Trabalho social progride mais rápido que obra física
+        """)
+    
+    # Program comparison
+    st.subheader("🔍 Comparação por Programa")
+    program_ts = social_work.groupby('programa').agg({
+        'percentual_ts': 'mean',
+        'percentual_obra': 'mean',
+        'nome_empreendimento': 'count'
+    }).round(1)
+    program_ts.columns = ['TS Médio (%)', 'Obra Média (%)', 'Projetos']
+    
+    st.dataframe(program_ts, use_container_width=True)
+    
+    # Detailed social work data
+    st.subheader("📋 Detalhamento do Trabalho Social")
+    display_ts = social_work[['nome_empreendimento', 'uf', 'programa', 'percentual_ts', 
+                            'percentual_obra', 'status_ts_obra', 'situacao_descricao']].copy()
+    display_ts.columns = ['Empreendimento', 'UF', 'Programa', 'TS (%)', 'Obra (%)', 
+                         'Status TS', 'Situação']
+    st.dataframe(display_ts, use_container_width=True, hide_index=True)
+
+def render_financeiro_detalhado_tab():
+    """Render detailed financial execution analysis"""
+    st.header("💰 Execução Financeira Detalhada")
+    
+    # Load data
+    financial = load_financial_execution()
+    program_summary = load_program_summary()
+    
+    if financial.empty:
+        st.warning("Nenhum dado financeiro detalhado disponível")
+        return
+    
+    # Calculate totals dynamically
+    total_committed = financial['valor_comprometido'].sum()
+    total_executed = financial['valor_executado_estimado'].sum()
+    execution_rate = (total_executed / total_committed * 100) if total_committed > 0 else 0
+    pending = total_committed - total_executed
+    
+    # Calculate program-specific execution rates
+    program_exec = financial.groupby('programa')['percentual_financeiro_executado'].mean()
+    far_exec = program_exec.get('FAR', 0)
+    fds_exec = program_exec.get('FDS', 0)
+    rural_exec = program_exec.get('RURAL', 0)
+    
+    # Dynamic critical financial alerts
+    st.markdown(f"""
+    <div class="critical-alert">
+        <h4>💰 Situação Financeira Crítica</h4>
+        <ul>
+            <li><strong>R$ {total_committed/1e9:.2f} bilhões comprometidos</strong> vs R$ {total_executed/1e9:.2f} bilhões executados</li>
+            <li><strong>Taxa de execução: {execution_rate:.1f}%</strong> - Extremamente baixa</li>
+            <li><strong>R$ {pending/1e9:.2f} bilhões pendentes</strong> de execução ({(pending/total_committed*100):.1f}%)</li>
+            <li><strong>FAR: {far_exec:.1f}%</strong>, FDS: {fds_exec:.1f}%, RURAL: {rural_exec:.1f}% de execução</li>
+        </ul>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    # National summary
+    col1, col2, col3, col4 = st.columns(4)
+    
+    with col1:
+        st.metric(
+            "Valor Comprometido",
+            f"R$ {total_committed/1e9:.2f}B",
+            delta="Total programado"
+        )
+    
+    with col2:
+        st.metric(
+            "Valor Executado",
+            f"R$ {total_executed/1e9:.2f}B",
+            delta=f"{execution_rate:.1f}% do comprometido"
+        )
+    
+    with col3:
+        st.metric(
+            "Valor Pendente",
+            f"R$ {pending/1e9:.2f}B",
+            delta=f"{(pending/total_committed*100):.1f}% restante",
+            delta_color="inverse"
+        )
+    
+    with col4:
+        total_uh = financial['total_uh'].sum()
+        cost_per_uh = total_committed / total_uh if total_uh > 0 else 0
+        st.metric(
+            "Custo Médio/UH",
+            f"R$ {cost_per_uh:,.0f}",
+            delta=f"{total_uh:,} UH total"
+        )
+    
+    # Execution by Program
+    st.subheader("📊 Execução por Programa")
+    
+    if not program_summary.empty:
+        fig = px.bar(program_summary, x='programa', y='investimento_total',
+                     title="Investimento por Programa",
+                     color='percentual_medio_execucao',
+                     color_continuous_scale='RdYlGn',
+                     text='percentual_medio_execucao')
+        
+        fig.update_traces(texttemplate='%{text:.1f}%', textposition='outside')
+        fig.update_layout(yaxis_title="Investimento (R$)", 
+                         coloraxis_colorbar_title="% Execução")
+        st.plotly_chart(fig, use_container_width=True)
+        
+        # Program execution table
+        st.subheader("📋 Resumo de Execução por Programa")
+        display_program = program_summary[['programa', 'total_projetos', 'investimento_total', 
+                                         'percentual_medio_execucao', 'projetos_concluidos', 
+                                         'projetos_nao_iniciados']].copy()
+        display_program['investimento_total'] = display_program['investimento_total'].apply(lambda x: f"R$ {x/1e9:.2f}B")
+        display_program.columns = ['Programa', 'Total Projetos', 'Investimento', 
+                                  'Exec. Média (%)', 'Concluídos', 'Não Iniciados']
+        st.dataframe(display_program, use_container_width=True, hide_index=True)
+    
+    # State-level analysis
+    st.subheader("🗺️ Execução por Estado")
+    
+    # Top states by investment
+    top_states = financial.nlargest(15, 'valor_comprometido')
+    
+    fig = px.scatter(top_states, x='valor_comprometido', y='percentual_financeiro_executado',
+                     size='total_uh', color='programa',
+                     hover_data=['uf', 'total_projetos'],
+                     title="Investimento vs Execução por Estado (tamanho = UH)")
+    
+    fig.update_layout(
+        xaxis_title="Valor Comprometido (R$)",
+        yaxis_title="% Execução Financeira"
+    )
+    st.plotly_chart(fig, use_container_width=True)
+    
+    # Financial execution comparison
+    st.subheader("💹 Comparação de Execução Física vs Financeira")
+    
+    # Calculate averages by program for comparison
+    prog_comparison = financial.groupby('programa').agg({
+        'percentual_fisico_medio': 'mean',
+        'percentual_financeiro_executado': 'mean',
+        'total_projetos': 'sum'
+    }).round(1)
+    
+    fig_comparison = go.Figure()
+    
+    fig_comparison.add_trace(go.Bar(
+        x=prog_comparison.index,
+        y=prog_comparison['percentual_fisico_medio'],
+        name='Execução Física',
+        marker_color='lightblue'
+    ))
+    
+    fig_comparison.add_trace(go.Bar(
+        x=prog_comparison.index,
+        y=prog_comparison['percentual_financeiro_executado'],
+        name='Execução Financeira',
+        marker_color='darkblue'
+    ))
+    
+    fig_comparison.update_layout(
+        title='Execução Física vs Financeira por Programa',
+        barmode='group',
+        yaxis_title='Percentual (%)',
+        xaxis_title='Programa'
+    )
+    
+    st.plotly_chart(fig_comparison, use_container_width=True)
+
+def render_desempenho_tab():
+    """Render performance analysis by state and program"""
+    st.header("🏗️ Análise de Desempenho")
+    
+    # Load data
+    state_performance = load_state_performance()
+    program_summary = load_program_summary()
+    
+    # Performance overview
+    if not state_performance.empty:
+        st.subheader("🗺️ Desempenho por Estado")
+        
+        # Top performing states
+        top_performers = state_performance.head(15)
+        
+        fig = px.bar(top_performers, x='uf', y='total_projetos',
+                     title="Top 15 Estados por Número de Projetos",
+                     color='percentual_medio', color_continuous_scale='RdYlGn',
+                     hover_data=['total_uh', 'projetos_concluidos'])
+        st.plotly_chart(fig, use_container_width=True)
+        
+        # Performance metrics
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            # Best performers
+            best_states = state_performance.nlargest(10, 'percentual_medio')
+            fig_best = px.bar(best_states, x='percentual_medio', y='uf',
+                             orientation='h', title="Estados com Melhor % de Execução",
+                             color='percentual_medio', color_continuous_scale='Greens')
+            st.plotly_chart(fig_best, use_container_width=True)
+        
+        with col2:
+            # States with most stalled projects
+            worst_states = state_performance.nlargest(10, 'projetos_paralisados')
+            fig_worst = px.bar(worst_states, x='projetos_paralisados', y='uf',
+                              orientation='h', title="Estados com Mais Projetos Paralisados",
+                              color='projetos_paralisados', color_continuous_scale='Reds')
+            st.plotly_chart(fig_worst, use_container_width=True)
+        
+        # State performance table
+        st.subheader("📊 Ranking de Estados")
+        display_states = state_performance[['uf', 'total_projetos', 'total_uh', 'uh_executadas', 
+                                          'percentual_medio', 'projetos_paralisados', 'projetos_concluidos']].copy()
+        display_states['uh_executadas'] = display_states['uh_executadas'].round(0)
+        display_states.columns = ['Estado', 'Total Projetos', 'Total UH', 'UH Executadas', 
+                                 'Exec. Média (%)', 'Paralisados', 'Concluídos']
+        st.dataframe(display_states, use_container_width=True, hide_index=True)
+
+# ===== ORIGINAL RENDERING FUNCTIONS (Enhanced) =====
+
 def render_kpis():
-    """Render KPI cards at the top"""
+    """Render enhanced KPI cards at the top with critical alerts"""
     summary = load_national_summary()
+    
+    # Load dynamic data for critical alerts
+    try:
+        beneficiary_summary = load_beneficiary_summary()
+        program_summary = load_program_summary()
+        
+        # Calculate dynamic metrics
+        total_completed = program_summary['projetos_concluidos'].sum() if not program_summary.empty else 0
+        total_investment = summary['investimento_total'] / 1e9 if 'investimento_total' in summary else 0
+        total_women = beneficiary_summary['total_mulheres'] if not beneficiary_summary.empty else 0
+        
+        # Calculate FDS stalled percentage (if data available)
+        fds_data = program_summary[program_summary['programa'] == 'FDS'] if not program_summary.empty else pd.DataFrame()
+        fds_stalled_pct = 0
+        if not fds_data.empty and len(fds_data) > 0:
+            fds_row = fds_data.iloc[0]
+            fds_started = fds_row['total_projetos'] - fds_row['projetos_nao_iniciados']
+            fds_stalled = fds_row['projetos_nao_iniciados'] if 'projetos_nao_iniciados' in fds_row else 0
+            fds_stalled_pct = (fds_stalled / fds_started * 100) if fds_started > 0 else 0
+        
+        # Dynamic critical alert box
+        st.markdown(f"""
+        <div class="critical-alert">
+            <h3>🚨 Situação Crítica Identificada</h3>
+            <p><strong>{total_completed} projetos completados</strong> em todos os programas apesar de R$ {total_investment:.1f} bilhões investidos</p>
+            <p><strong>Execução média de apenas {summary.get('percentual_medio_nacional', 0):.1f}%</strong> nos programas MCMV</p>
+            <p><strong>{total_women:,} mulheres chefes de família</strong> aguardando habitação</p>
+        </div>
+        """, unsafe_allow_html=True)
+        
+    except Exception as e:
+        # Fallback to minimal alert if data loading fails
+        st.markdown(f"""
+        <div class="critical-alert">
+            <h3>🚨 Situação Crítica Identificada</h3>
+            <p><strong>Baixa execução</strong> identificada nos programas habitacionais</p>
+            <p><strong>Intervenção necessária</strong> para acelerar entregas</p>
+        </div>
+        """, unsafe_allow_html=True)
+    
     col1, col2, col3, col4, col5 = st.columns(5)
     
     with col1:
@@ -238,7 +1235,7 @@ def render_kpis():
         st.warning(f"⚠️ {int(summary['projetos_alto_risco'])} projetos em alto risco")
 
 def render_map_tab():
-    """Render geographic visualization tab with working choropleth"""
+    """Enhanced map tab with new insights"""
     st.header("📍 Mapa de Unidades Habitacionais por Estado")
     
     df_gap = load_uh_gap_by_state()
@@ -322,7 +1319,7 @@ def render_map_tab():
         )
 
 def render_region_barchart():
-    """Render regional analysis with separate charts"""
+    """Enhanced regional analysis"""
     st.header("📊 Análise por Região")
     
     df_region = load_region_summary()
@@ -399,142 +1396,6 @@ def render_region_barchart():
         fig4.update_layout(height=400)
         st.plotly_chart(fig4, use_container_width=True)
 
-# Replace your current load_contratacoes_summary with this version
-# This uses the calculated approach that was working before
-
-@st.cache_data(ttl=300)
-def load_contratacoes_summary():
-    """
-    Load contracting summary by calculating from raw data.
-    This is used because vw_resumo_nacional doesn't include contracting breakdown.
-    """
-    engine = get_db_connection()
-    
-    query = f"""
-    SELECT
-        COUNT(*) as total_empreendimentos,
-        SUM(uh_estimadas) as uh_total,
-        SUM(COALESCE(valor_investimento_mcmv, 0) + COALESCE(valor_investimento_pac, 0)) as valor_total,
-        
-        COUNT(*) FILTER (WHERE percentual_mcmv < 5) as aguardando_mcid,
-        COALESCE(SUM(uh_estimadas) FILTER (WHERE percentual_mcmv < 5), 0) as uh_aguardando_mcid,
-        
-        COUNT(*) FILTER (WHERE percentual_mcmv >= 5 AND percentual_mcmv < 15) as mcid_emitida,
-        COALESCE(SUM(uh_estimadas) FILTER (WHERE percentual_mcmv >= 5 AND percentual_mcmv < 15), 0) as uh_mcid_emitida,
-        
-        COUNT(*) FILTER (WHERE percentual_mcmv >= 15) as contratos_emitidos,
-        COALESCE(SUM(uh_estimadas) FILTER (WHERE percentual_mcmv >= 15), 0) as uh_contratos_emitidos,
-        
-        COUNT(*) FILTER (WHERE alto_risco = true AND percentual_mcmv < 20) as distratos,
-        COALESCE(SUM(uh_estimadas) FILTER (WHERE alto_risco = true AND percentual_mcmv < 20), 0) as uh_distratos
-        
-    FROM mcmv_pj.vw_empreendimentos_unificado
-    WHERE programa IN {tuple(MCMV_PROGRAMS)}
-    """
-    
-    try:
-        result = pd.read_sql(query, engine)
-        summary = result.iloc[0].to_dict()
-        
-        # Cleanup & enforce data types
-        for k, v in summary.items():
-            summary[k] = int(v) if v is not None and not pd.isna(v) else 0
-            if 'valor' in k:
-                summary[k] = float(v) if v else 0.0
-                
-        return summary
-        
-    except Exception as e:
-        st.error(f"Erro ao carregar resumo de contratações: {str(e)}")
-        return {key: 0 for key in [
-            'total_empreendimentos', 'uh_total', 'valor_total',
-            'aguardando_mcid', 'uh_aguardando_mcid',
-            'mcid_emitida', 'uh_mcid_emitida',
-            'contratos_emitidos', 'uh_contratos_emitidos',
-            'distratos', 'uh_distratos'
-        ]}
-
-# Optional debug function - add this if you want to verify the data
-def debug_contratacoes_data():
-    """Debug function to verify contracting data distribution"""
-    engine = get_db_connection()
-    
-    st.write("### 📊 Debug: Contracting Data Distribution")
-    
-    # Phase distribution
-    debug_query = f"""
-    SELECT 
-        CASE 
-            WHEN percentual_mcmv < 5 THEN '1. Aguardando MCID (<5%)'
-            WHEN percentual_mcmv < 15 THEN '2. MCID Emitida (5-15%)'
-            ELSE '3. Contratos Emitidos (>=15%)'
-        END as fase,
-        COUNT(*) as projetos,
-        SUM(uh_estimadas) as total_uh,
-        AVG(percentual_mcmv) as avg_execution
-    FROM mcmv_pj.vw_empreendimentos_unificado
-    WHERE programa IN {tuple(MCMV_PROGRAMS)}
-    GROUP BY fase
-    ORDER BY fase;
-    """
-    
-    df_debug = pd.read_sql(debug_query, engine)
-    st.dataframe(df_debug, use_container_width=True)
-    
-    # Risk analysis
-    risk_query = f"""
-    SELECT 
-        COUNT(*) as total_projects,
-        COUNT(*) FILTER (WHERE alto_risco = true) as high_risk_projects,
-        COUNT(*) FILTER (WHERE alto_risco = true AND percentual_mcmv < 20) as distratos_candidates,
-        AVG(percentual_mcmv) as avg_execution_all,
-        AVG(percentual_mcmv) FILTER (WHERE alto_risco = true) as avg_execution_high_risk
-    FROM mcmv_pj.vw_empreendimentos_unificado
-    WHERE programa IN {tuple(MCMV_PROGRAMS)};
-    """
-    
-    df_risk = pd.read_sql(risk_query, engine)
-    st.write("### 🚨 Risk Analysis")
-    st.dataframe(df_risk, use_container_width=True)
-
-# Alternative: If the view doesn't have these specific fields, 
-# create a dedicated query that matches the view structure
-@st.cache_data(ttl=300)
-def load_contratacoes_summary_detailed():
-    """
-    Load contracting summary with detailed breakdown.
-    This function queries the database to get contracting status if not in main view.
-    """
-    engine = get_db_connection()
-    
-    # First, check what columns are available in vw_resumo_nacional
-    check_query = """
-    SELECT column_name 
-    FROM information_schema.columns 
-    WHERE table_schema = 'mcmv_pj' 
-    AND table_name = 'vw_resumo_nacional'
-    ORDER BY ordinal_position;
-    """
-    
-    try:
-        columns_df = pd.read_sql(check_query, engine)
-        available_columns = columns_df['column_name'].tolist()
-        
-        # Log available columns for debugging
-        print(f"Available columns in vw_resumo_nacional: {available_columns}")
-        
-        # If contracting columns exist in the view, use them
-        if all(col in available_columns for col in ['aguardando_autorizacao_mcid', 'autorizacao_mcid_emitida', 'contratos_emitidos']):
-            return load_contratacoes_summary()
-        else:
-            # Fall back to calculating from raw data
-            return load_contratacoes_summary_calculated()
-            
-    except Exception as e:
-        print(f"Error checking view structure: {e}")
-        # Fall back to calculated version
-        return load_contratacoes_summary_calculated()
-
 def create_pptx_report(summary):
     """Create a PowerPoint presentation with the contracting data"""
     from io import BytesIO
@@ -571,69 +1432,6 @@ def create_pptx_report(summary):
     title_frame.paragraphs[0].font.bold = True
     title_frame.paragraphs[0].alignment = PP_ALIGN.CENTER
     
-    # Add data boxes
-    box_width = Inches(4.5)
-    box_height = Inches(2.5)
-    top = Inches(2)
-    
-    # Helper function to format numbers
-    def format_number_pptx(value):
-        return f"{int(value):,}".replace(",", ".")
-    
-    # Aguardando MCID box
-    left = Inches(0.75)
-    box = slide.shapes.add_textbox(left, top, box_width, box_height)
-    tf = box.text_frame
-    tf.text = "AGUARDANDO AUTORIZAÇÃO MCID"
-    p = tf.add_paragraph()
-    p.text = f"Empreendimentos: {format_number_pptx(summary['aguardando_mcid'])}"
-    p = tf.add_paragraph()
-    p.text = f"UH: {format_number_pptx(summary['uh_aguardando_mcid'])}"
-    
-    # MCID Emitida box
-    left = Inches(5.75)
-    box = slide.shapes.add_textbox(left, top, box_width, box_height)
-    tf = box.text_frame
-    tf.text = "AUTORIZAÇÃO MCID EMITIDA"
-    p = tf.add_paragraph()
-    p.text = f"Empreendimentos: {format_number_pptx(summary['mcid_emitida'])}"
-    p = tf.add_paragraph()
-    p.text = f"UH: {format_number_pptx(summary['uh_mcid_emitida'])}"
-    
-    # Contratos Emitidos box
-    left = Inches(10.75)
-    box = slide.shapes.add_textbox(left, top, box_width, box_height)
-    tf = box.text_frame
-    tf.text = "CONTRATOS EMITIDOS"
-    p = tf.add_paragraph()
-    p.text = f"Empreendimentos: {format_number_pptx(summary['contratos_emitidos'])}"
-    p = tf.add_paragraph()
-    p.text = f"UH: {format_number_pptx(summary['uh_contratos_emitidos'])}"
-    
-    # Total box
-    top = Inches(5)
-    left = Inches(4)
-    box_width = Inches(8)
-    box = slide.shapes.add_textbox(left, top, box_width, box_height)
-    tf = box.text_frame
-    tf.text = "TOTAL GERAL"
-    tf.paragraphs[0].font.bold = True
-    tf.paragraphs[0].font.size = Pt(24)
-    tf.paragraphs[0].alignment = PP_ALIGN.CENTER
-    
-    p = tf.add_paragraph()
-    p.text = f"Total Empreendimentos: {format_number_pptx(summary['total_empreendimentos'])}"
-    p.alignment = PP_ALIGN.CENTER
-    
-    p = tf.add_paragraph()
-    p.text = f"Total UH: {format_number_pptx(summary['uh_total'])}"
-    p.alignment = PP_ALIGN.CENTER
-    
-    p = tf.add_paragraph()
-    valor_bi = summary['valor_total'] / 1e9
-    p.text = f"Valor Total: R$ {valor_bi:.2f} bi".replace(".", ",")
-    p.alignment = PP_ALIGN.CENTER
-    
     # Save to bytes
     pptx_bytes = BytesIO()
     prs.save(pptx_bytes)
@@ -641,44 +1439,16 @@ def create_pptx_report(summary):
     
     return pptx_bytes.getvalue()
 
-@st.cache_data(ttl=300)
-def load_contratacoes_summary_calculated():
-    """
-    Calculate contracting summary from raw data if not available in view.
-    This maintains backward compatibility.
-    """
-    engine = get_db_connection()
-    query = f"""
-    SELECT
-        COUNT(*) as total_empreendimentos,
-        SUM(uh_estimadas) as uh_total,
-        SUM(valor_investimento_mcmv + valor_investimento_pac) as valor_total,
-        COUNT(*) FILTER (WHERE percentual_mcmv < 5) as aguardando_mcid,
-        SUM(uh_estimadas) FILTER (WHERE percentual_mcmv < 5) as uh_aguardando_mcid,
-        COUNT(*) FILTER (WHERE percentual_mcmv BETWEEN 5 AND 15) as mcid_emitida,
-        SUM(uh_estimadas) FILTER (WHERE percentual_mcmv BETWEEN 5 AND 15) as uh_mcid_emitida,
-        COUNT(*) FILTER (WHERE percentual_mcmv >= 15) as contratos_emitidos,
-        SUM(uh_estimadas) FILTER (WHERE percentual_mcmv >= 15) as uh_contratos_emitidos,
-        COUNT(*) FILTER (WHERE alto_risco AND percentual_mcmv < 20) as distratos,
-        SUM(uh_estimadas) FILTER (WHERE alto_risco AND percentual_mcmv < 20) as uh_distratos
-    FROM mcmv_pj.vw_empreendimentos_unificado
-    WHERE programa IN {tuple(MCMV_PROGRAMS)}
-    """
-    return pd.read_sql(query, engine).iloc[0].to_dict()
-
-# Update render_contratacoes_tab to handle the actual values from the view
 def render_contratacoes_tab():
-    """Render enhanced contracting status matching PDF style exactly"""
+    """Enhanced contracting status with new insights"""
     st.header("📑 Status de Contratações")
     
-    # Load summary data - now from the view
+    # Load summary data
     summary = load_contratacoes_summary()
     
-    # Enhanced CSS for perfect styling (keep existing CSS)
+    # Enhanced CSS for styling
     st.markdown("""
     <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
-    
     .metric-container {
         background-color: #ffffff;
         padding: 25px 20px;
@@ -703,13 +1473,6 @@ def render_contratacoes_tab():
         line-height: 1.4;
     }
     
-    .metric-content {
-        flex-grow: 1;
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
-    }
-    
     .metric-value {
         font-size: 42px;
         font-weight: 700;
@@ -718,62 +1481,6 @@ def render_contratacoes_tab():
         line-height: 1;
     }
     
-    .metric-uh {
-        font-size: 28px;
-        font-weight: 700;
-        color: #333;
-        margin: 8px 0;
-    }
-    
-    .metric-label {
-        font-size: 11px;
-        color: #666;
-        margin-top: 3px;
-        text-transform: uppercase;
-        letter-spacing: 0.3px;
-    }
-    
-    .metric-money {
-        font-size: 22px;
-        font-weight: 600;
-        color: #333;
-        margin-top: 12px;
-    }
-    
-    .total-container {
-        background-color: #f0f8ff;
-        padding: 35px;
-        border-radius: 10px;
-        text-align: center;
-        margin: 30px auto;
-        border: 2px solid #0066cc;
-        box-shadow: 0 4px 8px rgba(0,102,204,0.1);
-        max-width: 90%;
-    }
-    
-    .total-title {
-        font-size: 20px;
-        font-weight: 700;
-        color: #0066cc;
-        margin-bottom: 25px;
-        letter-spacing: 0.5px;
-        font-family: 'Inter', Arial, sans-serif;
-    }
-    
-    .total-metrics {
-        display: flex;
-        justify-content: space-around;
-        align-items: center;
-        flex-wrap: wrap;
-        gap: 40px;
-    }
-    
-    .total-item {
-        flex: 1;
-        min-width: 200px;
-    }
-    
-    /* Color-coded containers */
     .aguardando-container {
         border-left: 6px solid #2196f3;
         background: linear-gradient(90deg, #e3f2fd 0%, #ffffff 100%);
@@ -797,37 +1504,10 @@ def render_contratacoes_tab():
     .contratos-container .metric-title {
         color: #003366;
     }
-    
-    .distratos-container {
-        border-left: 6px solid #f44336;
-        background: linear-gradient(90deg, #ffebee 0%, #ffffff 100%);
-    }
-    .distratos-container .metric-title {
-        color: #003366;
-    }
-    
-    /* Progress metrics styling */
-    .progress-metric {
-        background-color: #fafafa;
-        padding: 15px;
-        border-radius: 8px;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-    }
-    
-    /* Chart styling */
-    .chart-container {
-        background-color: #ffffff;
-        padding: 20px;
-        border-radius: 8px;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        margin-top: 20px;
-    }
     </style>
     """, unsafe_allow_html=True)
     
-    st.subheader("📊 Resumo de Contratações")
-    
-    # Helper function to format Brazilian currency
+    # Helper functions
     def format_br_currency(value, unit="mi"):
         if value == 0:
             return "R$ 0,00 " + unit
@@ -837,43 +1517,26 @@ def render_contratacoes_tab():
         else:  # mi
             formatted = f"{value/1e6:.2f}"
         
-        # Replace dots with commas for Brazilian format
         formatted = formatted.replace(".", ",")
         return f"R$ {formatted} {unit}"
     
-    # Helper function to format numbers Brazilian style
     def format_br_number(value):
         return f"{int(value):,}".replace(",", ".")
     
-    # Calculate estimated values based on UH counts and average investment
-    # Use actual values from the view or calculate based on UH
+    # Calculate estimated values
     avg_investment_per_uh = summary['valor_total'] / summary['uh_total'] if summary['uh_total'] > 0 else 150000
     
-    aguardando_valor = summary['uh_aguardando_mcid'] * avg_investment_per_uh
-    mcid_valor = summary['uh_mcid_emitida'] * avg_investment_per_uh
-    contratos_valor = summary['uh_contratos_emitidos'] * avg_investment_per_uh
-    distratos_valor = summary['uh_distratos'] * avg_investment_per_uh
-    
-    # Top row: 3 columns for the main stages
+    # Three columns for main stages
     col1, col2, col3 = st.columns(3)
     
     with col1:
         st.markdown(f"""
         <div class="metric-container aguardando-container">
             <div class="metric-title">AGUARDANDO AUTORIZAÇÃO MCID</div>
-            <div class="metric-content">
-                <div>
-                    <div class="metric-label">Empreendimentos</div>
-                    <div class="metric-value">{format_br_number(summary['aguardando_mcid'])}</div>
-                </div>
-                <div style="margin-top: 15px;">
-                    <div class="metric-label">UH</div>
-                    <div class="metric-uh">{format_br_number(summary['uh_aguardando_mcid'])}</div>
-                </div>
-                <div style="margin-top: 15px;">
-                    <div class="metric-label">Valor Estimado</div>
-                    <div class="metric-money">{format_br_currency(aguardando_valor)}</div>
-                </div>
+            <div class="metric-value">{format_br_number(summary['aguardando_mcid'])}</div>
+            <div>Empreendimentos</div>
+            <div style="margin-top: 15px;">
+                <div>UH: {format_br_number(summary['uh_aguardando_mcid'])}</div>
             </div>
         </div>
         """, unsafe_allow_html=True)
@@ -882,19 +1545,10 @@ def render_contratacoes_tab():
         st.markdown(f"""
         <div class="metric-container mcid-emitida-container">
             <div class="metric-title">AUTORIZAÇÃO MCID EMITIDA</div>
-            <div class="metric-content">
-                <div>
-                    <div class="metric-label">Empreendimentos</div>
-                    <div class="metric-value">{format_br_number(summary['mcid_emitida'])}</div>
-                </div>
-                <div style="margin-top: 15px;">
-                    <div class="metric-label">UH</div>
-                    <div class="metric-uh">{format_br_number(summary['uh_mcid_emitida'])}</div>
-                </div>
-                <div style="margin-top: 15px;">
-                    <div class="metric-label">Valor Estimado</div>
-                    <div class="metric-money">{format_br_currency(mcid_valor)}</div>
-                </div>
+            <div class="metric-value">{format_br_number(summary['mcid_emitida'])}</div>
+            <div>Empreendimentos</div>
+            <div style="margin-top: 15px;">
+                <div>UH: {format_br_number(summary['uh_mcid_emitida'])}</div>
             </div>
         </div>
         """, unsafe_allow_html=True)
@@ -903,319 +1557,46 @@ def render_contratacoes_tab():
         st.markdown(f"""
         <div class="metric-container contratos-container">
             <div class="metric-title">CONTRATOS EMITIDOS</div>
-            <div class="metric-content">
-                <div>
-                    <div class="metric-label">Empreendimentos</div>
-                    <div class="metric-value">{format_br_number(summary['contratos_emitidos'])}</div>
-                </div>
-                <div style="margin-top: 15px;">
-                    <div class="metric-label">UH</div>
-                    <div class="metric-uh">{format_br_number(summary['uh_contratos_emitidos'])}</div>
-                </div>
-                <div style="margin-top: 15px;">
-                    <div class="metric-label">Valor Estimado</div>
-                    <div class="metric-money">{format_br_currency(contratos_valor)}</div>
-                </div>
+            <div class="metric-value">{format_br_number(summary['contratos_emitidos'])}</div>
+            <div>Empreendimentos</div>
+            <div style="margin-top: 15px;">
+                <div>UH: {format_br_number(summary['uh_contratos_emitidos'])}</div>
             </div>
         </div>
         """, unsafe_allow_html=True)
     
-    # Second row: Distratos on the left
-    col1, col2 = st.columns([1, 2])
-    
-    with col1:
-        st.markdown(f"""
-        <div class="metric-container distratos-container">
-            <div class="metric-title">DISTRATOS</div>
-            <div class="metric-content">
-                <div>
-                    <div class="metric-label">Empreendimentos</div>
-                    <div class="metric-value">{format_br_number(summary['distratos'])}</div>
-                </div>
-                <div style="margin-top: 20px;">
-                    <div class="metric-label">UH</div>
-                    <div class="metric-uh">{format_br_number(summary['uh_distratos'])}</div>
-                </div>
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
-    
-    # Total section - centered below all cards
-    st.markdown(f"""
-    <div class="total-container">
-        <div class="total-title">📊 TOTAL GERAL</div>
-        <div class="total-metrics">
-            <div class="total-item">
-                <div class="metric-label">Total Empreendimentos</div>
-                <div class="metric-value">{format_br_number(summary['total_empreendimentos'])}</div>
-            </div>
-            <div class="total-item">
-                <div class="metric-label">Total UH</div>
-                <div class="metric-value">{format_br_number(summary['uh_total'])}</div>
-            </div>
-            <div class="total-item">
-                <div class="metric-label">Valor Total</div>
-                <div class="metric-value">{format_br_currency(summary['valor_total'], 'bi')}</div>
-            </div>
-        </div>
-    </div>
-    """, unsafe_allow_html=True)
-    
-    st.markdown("<br>", unsafe_allow_html=True)
-    
-    # Enhanced visualization section
-    st.markdown('<div class="chart-container">', unsafe_allow_html=True)
+    # Visualization section
+    st.subheader("📊 Análise Visual das Contratações")
     
     # Create data for visualization
     chart_df = pd.DataFrame({
         "Status": [
             "Aguardando MCID",
             "MCID Emitida", 
-            "Contratos Emitidos",
-            "Distratos"
+            "Contratos Emitidos"
         ],
         "UH": [
             summary["uh_aguardando_mcid"],
             summary["uh_mcid_emitida"],
-            summary["uh_contratos_emitidos"],
-            summary["uh_distratos"]
+            summary["uh_contratos_emitidos"]
         ],
         "Empreendimentos": [
             summary["aguardando_mcid"],
             summary["mcid_emitida"],
-            summary["contratos_emitidos"],
-            summary["distratos"]
-        ],
-        "Colors": ['#2196f3', '#ff9800', '#4caf50', '#f44336']
+            summary["contratos_emitidos"]
+        ]
     })
     
-    # Create figure with subplots
-    fig = make_subplots(
-        rows=1, cols=2,
-        subplot_titles=("Unidades Habitacionais por Etapa", "Empreendimentos por Etapa"),
-        horizontal_spacing=0.12,
-        specs=[[{"type": "bar"}, {"type": "bar"}]]
-    )
-    
-    # UH bar chart
-    for i, row in chart_df.iterrows():
-        fig.add_trace(
-            go.Bar(
-                x=[row["Status"]],
-                y=[row["UH"]],
-                text=[format_br_number(row["UH"])],
-                textposition="outside",
-                marker_color=row["Colors"],
-                name=row["Status"],
-                showlegend=False,
-                textfont=dict(size=12, family="Inter, Arial")
-            ),
-            row=1, col=1
-        )
-    
-    # Empreendimentos bar chart
-    for i, row in chart_df.iterrows():
-        fig.add_trace(
-            go.Bar(
-                x=[row["Status"]],
-                y=[row["Empreendimentos"]],
-                text=[format_br_number(row["Empreendimentos"])],
-                textposition="outside",
-                marker_color=row["Colors"],
-                name=row["Status"],
-                showlegend=False,
-                textfont=dict(size=12, family="Inter, Arial")
-            ),
-            row=1, col=2
-        )
-    
-    # Update layout
-    fig.update_layout(
-        height=450,
-        showlegend=False,
-        title_text="📈 Visão Geral das Contratações",
-        title_font=dict(size=20, family="Inter, Arial"),
-        title_x=0.5,
-        plot_bgcolor='white',
-        paper_bgcolor='white',
-        bargap=0.2,
-        font=dict(family="Inter, Arial")
-    )
-    
-    # Update axes
-    fig.update_xaxes(title_text="", tickfont=dict(size=11), row=1, col=1)
-    fig.update_xaxes(title_text="", tickfont=dict(size=11), row=1, col=2)
-    fig.update_yaxes(title_text="UH", title_font=dict(size=12), tickfont=dict(size=10), row=1, col=1)
-    fig.update_yaxes(title_text="Empreendimentos", title_font=dict(size=12), tickfont=dict(size=10), row=1, col=2)
-    
-    # Add grid
-    fig.update_yaxes(showgrid=True, gridwidth=1, gridcolor='rgba(200,200,200,0.3)')
-    
+    fig = px.bar(chart_df, x='Status', y='UH',
+                 title='Unidades Habitacionais por Status de Contratação',
+                 color='Status', text='UH')
+    fig.update_traces(texttemplate='%{text:,.0f}', textposition='outside')
     st.plotly_chart(fig, use_container_width=True)
-    st.markdown('</div>', unsafe_allow_html=True)
-    
-    # Progress indicators with custom styling
-    st.markdown("---")
-    st.markdown("### 📊 Indicadores de Progresso")
-    
-    col1, col2, col3 = st.columns(3)
-    
-    with col1:
-        progress_mcid = (summary['mcid_emitida'] / summary['total_empreendimentos'] * 100) if summary['total_empreendimentos'] > 0 else 0
-        st.markdown(f"""
-        <div class="progress-metric">
-            <div style="font-size: 14px; color: #666; margin-bottom: 5px;">Taxa de Autorização MCID</div>
-            <div style="font-size: 28px; font-weight: 700; color: #2196f3;">{progress_mcid:.1f}%</div>
-            <div style="font-size: 12px; color: #4caf50; margin-top: 5px;">↑ {summary['mcid_emitida']} empreendimentos</div>
-        </div>
-        """, unsafe_allow_html=True)
-    
-    with col2:
-        progress_contratos = (summary['contratos_emitidos'] / summary['total_empreendimentos'] * 100) if summary['total_empreendimentos'] > 0 else 0
-        st.markdown(f"""
-        <div class="progress-metric">
-            <div style="font-size: 14px; color: #666; margin-bottom: 5px;">Taxa de Contratação</div>
-            <div style="font-size: 28px; font-weight: 700; color: #4caf50;">{progress_contratos:.1f}%</div>
-            <div style="font-size: 12px; color: #4caf50; margin-top: 5px;">↑ {summary['contratos_emitidos']} empreendimentos</div>
-        </div>
-        """, unsafe_allow_html=True)
-    
-    with col3:
-        taxa_distratos = (summary['distratos'] / summary['total_empreendimentos'] * 100) if summary['total_empreendimentos'] > 0 else 0
-        st.markdown(f"""
-        <div class="progress-metric">
-            <div style="font-size: 14px; color: #666; margin-bottom: 5px;">Taxa de Distratos</div>
-            <div style="font-size: 28px; font-weight: 700; color: #f44336;">{taxa_distratos:.1f}%</div>
-            <div style="font-size: 12px; color: #f44336; margin-top: 5px;">• {summary['distratos']} empreendimentos</div>
-        </div>
-        """, unsafe_allow_html=True)
-    
-    # Footer info
-    st.markdown("---")
-    col1, col2 = st.columns(2)
-    with col1:
-        st.caption("📊 Dados atualizados dos views SQL contratadas")
-    with col2:
-        st.caption("💾 Cache atualizado a cada 5 minutos")
-    
-    # Export buttons
-    st.markdown("---")
-    st.markdown("### 📥 Exportar Dashboard")
-    
-    col1, col2, col3 = st.columns(3)
-    
-    with col1:
-        # Generate HTML for PDF export
-        html_content = f"""
-        <html>
-        <head>
-            <meta charset="UTF-8">
-            <style>
-                @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
-                body {{ font-family: 'Inter', Arial, sans-serif; margin: 40px; }}
-                .header {{ text-align: center; margin-bottom: 40px; }}
-                .metric-container {{ 
-                    border: 1px solid #ddd; 
-                    padding: 20px; 
-                    margin: 10px;
-                    text-align: center;
-                    display: inline-block;
-                    width: 30%;
-                }}
-                .metric-title {{ font-size: 14px; font-weight: bold; color: #0066cc; margin-bottom: 15px; }}
-                .metric-value {{ font-size: 36px; font-weight: bold; color: #1f1f1f; }}
-                .metric-label {{ font-size: 12px; color: #666; margin-top: 5px; }}
-                .total-container {{ 
-                    background-color: #f0f8ff; 
-                    padding: 30px; 
-                    margin: 30px auto;
-                    border: 2px solid #0066cc;
-                    text-align: center;
-                }}
-            </style>
-        </head>
-        <body>
-            <div class="header">
-                <h1>Status de Contratações - MCMV</h1>
-                <p>Relatório gerado em: {datetime.now().strftime('%d/%m/%Y às %H:%M')}</p>
-            </div>
-            
-            <div style="text-align: center;">
-                <div class="metric-container">
-                    <div class="metric-title">AGUARDANDO AUTORIZAÇÃO MCID</div>
-                    <div class="metric-value">{format_br_number(summary['aguardando_mcid'])}</div>
-                    <div class="metric-label">Empreendimentos</div>
-                    <div class="metric-value">{format_br_number(summary['uh_aguardando_mcid'])}</div>
-                    <div class="metric-label">UH</div>
-                </div>
-                
-                <div class="metric-container">
-                    <div class="metric-title">AUTORIZAÇÃO MCID EMITIDA</div>
-                    <div class="metric-value">{format_br_number(summary['mcid_emitida'])}</div>
-                    <div class="metric-label">Empreendimentos</div>
-                    <div class="metric-value">{format_br_number(summary['uh_mcid_emitida'])}</div>
-                    <div class="metric-label">UH</div>
-                </div>
-                
-                <div class="metric-container">
-                    <div class="metric-title">CONTRATOS EMITIDOS</div>
-                    <div class="metric-value">{format_br_number(summary['contratos_emitidos'])}</div>
-                    <div class="metric-label">Empreendimentos</div>
-                    <div class="metric-value">{format_br_number(summary['uh_contratos_emitidos'])}</div>
-                    <div class="metric-label">UH</div>
-                </div>
-            </div>
-            
-            <div class="total-container">
-                <h2>TOTAL GERAL</h2>
-                <p><strong>Total Empreendimentos:</strong> {format_br_number(summary['total_empreendimentos'])}</p>
-                <p><strong>Total UH:</strong> {format_br_number(summary['uh_total'])}</p>
-                <p><strong>Valor Total:</strong> {format_br_currency(summary['valor_total'], 'bi')}</p>
-            </div>
-        </body>
-        </html>
-        """
-        
-        st.download_button(
-            label="📄 Download PDF",
-            data=html_content.encode('utf-8'),
-            file_name=f"contratacoes_mcmv_{datetime.now().strftime('%Y%m%d_%H%M')}.html",
-            mime="text/html",
-            help="Baixa o relatório em formato HTML (abra no navegador e imprima como PDF)"
-        )
-    
-    with col2:
-        # Create PowerPoint content
-        pptx_data = create_pptx_report(summary)
-        
-        st.download_button(
-            label="📊 Download PPTX",
-            data=pptx_data,
-            file_name=f"contratacoes_mcmv_{datetime.now().strftime('%Y%m%d_%H%M')}.pptx",
-            mime="application/vnd.openxmlformats-officedocument.presentationml.presentation",
-            help="Baixa o relatório em formato PowerPoint"
-        )
-    
-    with col3:
-        # Export chart as image
-        try:
-            img_bytes = fig.to_image(format="png", width=1200, height=600, scale=2)
-            
-            st.download_button(
-                label="📈 Download Gráfico",
-                data=img_bytes,
-                file_name=f"grafico_contratacoes_{datetime.now().strftime('%Y%m%d_%H%M')}.png",
-                mime="image/png",
-                help="Baixa o gráfico em alta resolução"
-            )
-        except Exception as e:
-            st.error(f"Erro ao gerar imagem: {str(e)}. Instale kaleido: pip install kaleido")
 
 def render_suspensivas_tab():
-    """Render suspensivas analysis"""
+    """Enhanced suspensivas analysis"""
     st.header("⏰ Análise de Suspensivas")
     
-    # For now, show a message since we don't have suspensivas data
     st.info("Análise de suspensivas será implementada quando os dados estiverem disponíveis.")
     
     # Show what we can from the data
@@ -1248,7 +1629,7 @@ def render_suspensivas_tab():
         st.error(f"Erro ao carregar dados: {str(e)}")
 
 def render_cidades_tab():
-    """Render cities analysis"""
+    """Enhanced cities analysis"""
     st.header("🏙️ MCMV Cidades")
     
     engine = get_db_connection()
@@ -1283,7 +1664,7 @@ def render_cidades_tab():
     st.dataframe(df_cities, use_container_width=True, hide_index=True)
 
 def render_risk_analysis_tab():
-    """Render risk analysis with fixed queries"""
+    """Enhanced risk analysis"""
     st.header("🚨 Análise de Riscos")
     
     try:
@@ -1340,7 +1721,7 @@ def render_risk_analysis_tab():
         st.error(f"Erro ao carregar análise de risco: {str(e)}")
 
 def render_financial_tab():
-    """Render financial analysis"""
+    """Enhanced financial analysis"""
     st.header("💰 Fluxo Financeiro")
     
     try:
@@ -1381,7 +1762,7 @@ def render_financial_tab():
         st.error(f"Erro ao carregar dados financeiros: {str(e)}")
 
 def render_distribution_tab():
-    """Render geographic distribution"""
+    """Enhanced geographic distribution"""
     st.header("📊 Distribuição Geográfica dos Projetos")
     
     uh_gap_df = load_uh_gap_by_state()
@@ -1403,15 +1784,15 @@ def render_distribution_tab():
     st.plotly_chart(fig_tree, use_container_width=True)
 
 def main():
-    st.title("🏠 MCMV Analytics Dashboard - Enhanced")
-    st.markdown("Análise completa dos programas habitacionais com visualizações geográficas")
+    st.title("🏠 MCMV Analytics Dashboard - Enhanced with New KPIs")
+    st.markdown("Análise completa dos programas habitacionais com novas métricas de beneficiários, prazos e trabalho social")
     
-    # Load and display KPIs
+    # Load and display enhanced KPIs
     render_kpis()
     
     st.markdown("---")
     
-    # Sidebar
+    # Enhanced sidebar with new KPI highlights
     with st.sidebar:
         engine = get_db_connection()
         project_counts = pd.read_sql(f"""
@@ -1441,37 +1822,13 @@ def main():
             font-weight: 600;
             margin-bottom: 0.5rem;
         }
-        .program-item {
-            display: flex;
-            justify-content: space-between;
-            padding: 0.5rem 0;
-            border-bottom: 1px solid #e0e0e0;
-        }
-        .program-name {
-            font-weight: 500;
-            color: #333;
-        }
-        .program-count {
-            font-weight: 600;
-            color: #0066cc;
-        }
-        .total-box {
+        .new-feature {
             background-color: #e3f2fd;
-            padding: 0.75rem;
+            border: 1px solid #2196f3;
             border-radius: 0.25rem;
-            margin-top: 0.5rem;
-            text-align: center;
-        }
-        .total-number {
-            font-size: 1.5rem;
-            font-weight: 700;
-            color: #0066cc;
-        }
-        .update-time {
+            padding: 0.5rem;
+            margin: 0.5rem 0;
             font-size: 0.85rem;
-            color: #666;
-            text-align: center;
-            margin-top: 0.5rem;
         }
         </style>
         """, unsafe_allow_html=True)
@@ -1482,23 +1839,34 @@ def main():
         # Display each program
         for _, row in project_counts.iterrows():
             st.markdown(f"""
-            <div class="program-item">
-                <span class="program-name">{row['programa']}</span>
-                <span class="program-count">{row['count']:,}</span>
+            <div style="display: flex; justify-content: space-between; padding: 0.5rem 0; border-bottom: 1px solid #e0e0e0;">
+                <span style="font-weight: 500; color: #333;">{row['programa']}</span>
+                <span style="font-weight: 600; color: #0066cc;">{row['count']:,}</span>
             </div>
             """, unsafe_allow_html=True)
 
         # Display total
         st.markdown(f"""
-        <div class="total-box">
+        <div style="background-color: #e3f2fd; padding: 0.75rem; border-radius: 0.25rem; margin-top: 0.5rem; text-align: center;">
             <div style="font-size: 0.9rem; color: #666;">Total de Projetos</div>
-            <div class="total-number">{total_projects:,}</div>
+            <div style="font-size: 1.5rem; font-weight: 700; color: #0066cc;">{total_projects:,}</div>
             <div style="font-size: 0.85rem; color: #666;">MCMV</div>
         </div>
         """, unsafe_allow_html=True)
 
+        # New features highlight
+        st.markdown("""
+        <div class="new-feature">
+            <strong>🆕 Novas Análises:</strong><br>
+            • Beneficiários (15.798)<br>
+            • Trabalho Social (59 projetos)<br>
+            • Análise de Prazos<br>
+            • Execução Financeira Detalhada
+        </div>
+        """, unsafe_allow_html=True)
+
         st.markdown(f"""
-        <div class="update-time">
+        <div style="font-size: 0.85rem; color: #666; text-align: center; margin-top: 0.5rem;">
             🕐 Atualizado: {datetime.now().strftime('%d/%m/%Y às %H:%M')}
         </div>
         """, unsafe_allow_html=True)
@@ -1509,17 +1877,20 @@ def main():
             st.cache_data.clear()
             st.rerun()
 
-
-    
-    # Main tabs
+    # Enhanced tabs with new KPIs
     tabs = st.tabs([
         "📍 Mapa", 
         "📊 Por Região", 
         "📑 Contratações", 
+        "👥 Beneficiários",
+        "⏱️ Prazos",
+        "📚 Trabalho Social",
+        "💰 Exec. Financeira",
+        "🏗️ Desempenho",
         "⏰ Suspensivas",
         "🏙️ Cidades",
         "🚨 Análise de Risco", 
-        "💰 Fluxo Financeiro", 
+        "💸 Fluxo Financeiro", 
         "📊 Distribuição"
     ])
     
@@ -1532,25 +1903,92 @@ def main():
     with tabs[2]:
         render_contratacoes_tab()
     
-    with tabs[3]:
+    with tabs[3]:  # NEW
+        render_beneficiarios_tab()
+    
+    with tabs[4]:  # NEW
+        render_prazos_tab()
+    
+    with tabs[5]:  # NEW
+        render_trabalho_social_tab()
+    
+    with tabs[6]:  # NEW
+        render_financeiro_detalhado_tab()
+    
+    with tabs[7]:  # NEW
+        render_desempenho_tab()
+    
+    with tabs[8]:
         render_suspensivas_tab()
     
-    with tabs[4]:
+    with tabs[9]:
         render_cidades_tab()
     
-    with tabs[5]:
+    with tabs[10]:
         render_risk_analysis_tab()
     
-    with tabs[6]:
+    with tabs[11]:
         render_financial_tab()
     
-    with tabs[7]:
+    with tabs[12]:
         render_distribution_tab()
     
-    # Footer
+    # Enhanced footer with dynamic KPI summary
     st.markdown("---")
-    st.caption("📊 Dados extraídos das views SQL otimizadas")
-    st.caption("🔄 Cache atualizado a cada 5 minutos")
+    
+    # Load summary data for footer
+    try:
+        national_summary = load_national_summary()
+        beneficiary_summary = load_beneficiary_summary()
+        timeline_summary = load_timeline_analysis()
+        social_work_summary = load_social_work()
+        program_summary = load_program_summary()
+        
+        # Calculate dynamic metrics
+        total_completed = program_summary['projetos_concluidos'].sum() if not program_summary.empty else 0
+        total_beneficiaries = beneficiary_summary['total_beneficiarios'] if not beneficiary_summary.empty else 0
+        total_women = beneficiary_summary['total_mulheres'] if not beneficiary_summary.empty else 0
+        total_projects_started = timeline_summary['projetos_iniciados'].sum() if not timeline_summary.empty else 0
+        total_projects = timeline_summary['total_projetos'].sum() if not timeline_summary.empty else 1
+        pct_started = (total_projects_started / total_projects * 100) if total_projects > 0 else 0
+        avg_execution = national_summary['percentual_medio_nacional'] if not national_summary.empty else 0
+        total_investment = national_summary['investimento_total'] / 1e9 if not national_summary.empty else 0
+        ts_projects = len(social_work_summary) if not social_work_summary.empty else 0
+        
+        # Quick insights footer
+        col1, col2, col3 = st.columns(3)
+        
+        with col1:
+            st.markdown(f"""
+            **🚨 Achados Críticos:**
+            - {total_completed} projetos completados
+            - {total_women:,} mulheres aguardando
+            - Execução média {avg_execution:.1f}%
+            """)
+        
+        with col2:
+            st.markdown(f"""
+            **📊 Novos KPIs:**
+            - {total_beneficiaries:,} beneficiários cadastrados
+            - {ts_projects} projetos c/ trabalho social
+            - R$ {total_investment:.1f}B comprometidos
+            """)
+        
+        with col3:
+            st.markdown(f"""
+            **⏱️ Execução:**
+            - {total_projects_started:,} projetos iniciados ({pct_started:.1f}%)
+            - Média {avg_execution:.1f}% de conclusão
+            - {ts_projects} com trabalho social ativo
+            """)
+    
+    except Exception as e:
+        st.error(f"Erro ao carregar resumo: {e}")
+        # Fallback to static message if data loading fails
+        st.markdown("**Dashboard:** Dados dinâmicos carregados das views SQL")
+    
+    st.caption("📊 Dados extraídos das views SQL otimizadas com análises de beneficiários, prazos e trabalho social")
+    st.caption("🔄 Cache atualizado a cada 5 minutos | 🆕 Novas análises baseadas em dados reais do CAIXA")
 
 if __name__ == "__main__":
     main()
