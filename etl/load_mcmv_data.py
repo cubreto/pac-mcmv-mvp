@@ -80,7 +80,7 @@ def load_mcmv_to_projeto_status():
         'valor_empenhado': 0,
         'valor_pago': 0,
         'percentual_obra_realizado': df.get('PC_OBRA_REALIZADA', 0).fillna(0),
-        'data_inicio_obra': None,
+        'data_inicio_obra': df['DT_INICIO_OBRA'] if 'DT_INICIO_OBRA' in df.columns else None,
         'situacao_atual': 'Em execução - Dados HIS',
         'data_atualizacao_situacao': date.today(),
         'uh_estimadas': df['uh_real'].fillna(0).astype(int)
