@@ -15,7 +15,12 @@ from datetime import datetime
 import numpy as np
 import urllib.request
 from io import BytesIO
+import hashlib
+from functools import wraps
 
+import json
+from datetime import datetime, timedelta
+from functools import wraps
 
 # Page config
 st.set_page_config(
@@ -25,6 +30,145 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
+# User database with hashed passwords
+USERS = {
+    "rangel@digiteam.com.br": {
+        "password_hash": "ebcf3510d73b4b829302228b5e98031f53f310015357db32e12e6e7ab3f7be9d",
+        "name": "Guillermo Rangel",
+        "company": "Digiteam",
+        "role": "admin"
+    },
+    "rodolfo.dutra@tgvtec.com.br": {
+        "password_hash": "ebcf3510d73b4b829302228b5e98031f53f310015357db32e12e6e7ab3f7be9d",
+        "name": "Rodolfo Dutra",
+        "company": "TGV",
+        "role": "user"
+    },
+    "felipe.andrade@tgvtec.com.br": {
+        "password_hash": "ebcf3510d73b4b829302228b5e98031f53f310015357db32e12e6e7ab3f7be9d",
+        "name": "Felipe Andrade", 
+        "company": "TGV",
+        "role": "user"
+    },
+    "jcesar@digiteam.com.br": {
+        "password_hash": "ebcf3510d73b4b829302228b5e98031f53f310015357db32e12e6e7ab3f7be9d",
+        "name": "Julio César",
+        "company": "Digiteam", 
+        "role": "user"
+    }
+}
+
+def hash_password(password):
+    """Hash password using SHA-256"""
+    return hashlib.sha256(password.encode()).hexdigest()
+
+def verify_password(email, password):
+    """Verify user credentials"""
+    if email not in USERS:
+        return False
+    
+    expected_hash = USERS[email]["password_hash"]
+    actual_hash = hash_password(password)
+    
+    return actual_hash == expected_hash
+
+def login_form():
+    """Display login form and handle authentication"""
+    st.markdown("""
+    <div style="max-width: 400px; margin: 0 auto; padding: 2rem; background: white; border-radius: 10px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
+        <h2 style="text-align: center; color: #1f4e79; margin-bottom: 2rem;">
+            🏠 MCMV Dashboard - CAIXA
+        </h2>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    st.markdown("### 🔐 Acesso Restrito")
+    
+    with st.form("login_form"):
+        email = st.text_input("📧 Email Corporativo", placeholder="seu.email@empresa.com.br")
+        password = st.text_input("🔑 Senha", type="password", placeholder="Digite sua senha")
+        submit_button = st.form_submit_button("Entrar", use_container_width=True)
+        
+        if submit_button:
+            if verify_password(email, password):
+                # Store user session
+                st.session_state.authenticated = True
+                st.session_state.user_email = email
+                st.session_state.user_name = USERS[email]["name"]
+                st.session_state.user_company = USERS[email]["company"]
+                st.session_state.user_role = USERS[email]["role"]
+                st.session_state.login_time = datetime.now()
+                
+                st.success(f"✅ Bem-vindo, {USERS[email]['name']}!")
+                st.rerun()
+            else:
+                st.error("❌ Email ou senha incorretos")
+    
+    st.info("""
+    📋 **Instruções de Acesso:**
+    - Use seu email corporativo (@tgvtec.com.br ou @digiteam.com.br)
+    - Senha: `caixamcmvpac`
+    - Entre em contato com Rangel@digiteam.com.br para suporte técnico
+    """)
+
+def check_session_timeout():
+    """Check if user session has expired (8 hours)"""
+    if 'login_time' in st.session_state:
+        login_time = st.session_state.login_time
+        current_time = datetime.now()
+        if current_time - login_time > timedelta(hours=8):
+            # Session expired
+            for key in ['authenticated', 'user_email', 'user_name', 'user_company', 'user_role', 'login_time']:
+                if key in st.session_state:
+                    del st.session_state[key]
+            st.warning("🕐 Sessão expirada. Faça login novamente.")
+            st.rerun()
+
+def user_info_sidebar():
+    """Display user information in sidebar"""
+    if st.session_state.get('authenticated', False):
+        with st.sidebar:
+            st.markdown("---")
+            st.markdown("### 👤 Usuário Logado")
+            st.write(f"**Nome:** {st.session_state.user_name}")
+            st.write(f"**Email:** {st.session_state.user_email}")
+            st.write(f"**Empresa:** {st.session_state.user_company}")
+            
+            if st.session_state.user_role == "admin":
+                st.write("**Função:** 🔑 Administrador")
+            else:
+                st.write("**Função:** 👤 Usuário")
+            
+            # Login time
+            login_time = st.session_state.login_time.strftime("%d/%m/%Y %H:%M")
+            st.write(f"**Login:** {login_time}")
+            
+            # Logout button
+            if st.button("🚪 Sair", use_container_width=True):
+                for key in ['authenticated', 'user_email', 'user_name', 'user_company', 'user_role', 'login_time']:
+                    if key in st.session_state:
+                        del st.session_state[key]
+                st.rerun()
+
+def require_auth(func):
+    """Decorator to require authentication for dashboard functions"""
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        # Check session timeout
+        check_session_timeout()
+        
+        # Check if user is authenticated
+        if not st.session_state.get('authenticated', False):
+            login_form()
+            return
+        
+        # Display user info in sidebar
+        user_info_sidebar()
+        
+        # Call the actual function
+        return func(*args, **kwargs)
+    
+    return wrapper
 # Custom CSS
 # Enhanced Custom CSS with forced light theme
 # Fixed Custom CSS - Light theme without breaking plots
@@ -1783,8 +1927,9 @@ def render_distribution_tab():
     )
     st.plotly_chart(fig_tree, use_container_width=True)
 
+@require_auth
 def main():
-    st.title("🏠 MCMV Analytics Dashboard - Enhanced with New KPIs")
+    st.title("🏠 Dashboard MCMV - Análise de Investimentos")
     st.markdown("Análise completa dos programas habitacionais com novas métricas de beneficiários, prazos e trabalho social")
     
     # Load and display enhanced KPIs
