@@ -2,6 +2,7 @@
 """
 Load MCMV HIS data using REAL investment values from Excel files
 Updated to use VR_TOTAL_INVESTIMENTO and other actual investment fields
+FIXED: Now includes nome_empreendimento from NO_EMPREENDIMENTO
 """
 import sys
 from pathlib import Path
@@ -86,56 +87,29 @@ def load_mcmv_to_projeto_status():
             
             # Define investment field mapping for each program
             if program == 'FAR':
-                # Use VR_TOTAL_INVESTIMENTO for total project investment
-                # Or use VR_EMPRESTIMO_FAR for CAIXA portion only
-                investment_field = 'VR_TOTAL_INVESTIMENTO'  # Change to VR_EMPRESTIMO_FAR if you want CAIXA portion only
+                investment_field = 'VR_TOTAL_INVESTIMENTO'
             elif program == 'FDS':
-                # Use VR_TOTAL_INVESTIMENTO for total project investment
-                # Or use VR_FINANCIAMENTO_FDS for CAIXA portion only
-                investment_field = 'VR_TOTAL_INVESTIMENTO'  # Change to VR_FINANCIAMENTO_FDS if you want CAIXA portion only
+                investment_field = 'VR_TOTAL_INVESTIMENTO'
             elif program == 'RURAL':
-                # For RURAL, VR_TOTAL_INVESTIMENTO and VR_FINANCIAMENTO_FDS are the same
                 investment_field = 'VR_TOTAL_INVESTIMENTO'
             
             # Debug: Check if investment field exists
-            available_investment_cols = [col for col in cadastro.columns if 'VR_' in col and 'INVEST' in col]
-            print(f"  {program} available investment columns: {available_investment_cols}")
-            
             if investment_field in cadastro.columns:
-                # Create lookup dictionary from cadastro data
+                print(f"  ✅ {program}: Found {investment_field}")
+                
+                # Create lookup for this program
                 investment_lookup = cadastro.set_index('NU_APF')[investment_field].to_dict()
                 
-                # Debug: Check some sample values
-                sample_values = list(investment_lookup.values())[:5]
-                print(f"  {program} sample investment values: {sample_values}")
-                
-                # Apply to dataframe
+                # Apply to matching rows in main dataframe
                 mask = df['program_code'] == program
                 df.loc[mask, 'valor_investimento_real'] = df.loc[mask, 'NU_APF'].map(investment_lookup).fillna(0)
                 
-                # Count how many projects got investment values
-                projects_with_investment = df.loc[mask, 'valor_investimento_real'].gt(0).sum()
+                # Show totals for verification
                 total_investment = df.loc[mask, 'valor_investimento_real'].sum()
-                
-                print(f"  {program}: {projects_with_investment} projects with investment data")
-                print(f"  {program}: Total investment R$ {total_investment/1e9:.2f}B from {investment_field}")
+                count = mask.sum()
+                print(f"    {program}: {count} projects, R$ {total_investment/1e9:.2f}B total")
             else:
-                print(f"  WARNING: {investment_field} not found in {program} cadastro data")
-                print(f"  Available columns: {list(cadastro.columns)}")
-                
-                # Try alternative fields
-                alternatives = ['VR_EMPRESTIMO_FAR', 'VR_FINANCIAMENTO_FDS', 'VR_TOTAL_OPERACAO']
-                for alt_field in alternatives:
-                    if alt_field in cadastro.columns:
-                        print(f"  Found alternative field: {alt_field}")
-                        investment_lookup = cadastro.set_index('NU_APF')[alt_field].to_dict()
-                        mask = df['program_code'] == program
-                        df.loc[mask, 'valor_investimento_real'] = df.loc[mask, 'NU_APF'].map(investment_lookup).fillna(0)
-                        
-                        projects_with_investment = df.loc[mask, 'valor_investimento_real'].gt(0).sum()
-                        total_investment = df.loc[mask, 'valor_investimento_real'].sum()
-                        print(f"  {program}: Using {alt_field} - {projects_with_investment} projects, R$ {total_investment/1e9:.2f}B")
-                        break
+                print(f"  ❌ {program}: {investment_field} not found in columns: {list(cadastro.columns)[:5]}...")
     
     # ================================================================
     # Prepare data for database with REAL investment values
@@ -148,6 +122,7 @@ def load_mcmv_to_projeto_status():
         'municipio_beneficiado': df.get('NO_MUNICIPIO', df.get('NO_MUNICIPIO_IBGE', '')),
         'programa': df['program_code'],
         'tipo_programa': 'MCMV-HIS',
+        'nome_empreendimento': df.get('NO_EMPREENDIMENTO', '').astype(str).str.strip(),  # ← FIXED: Now includes project names!
         'valor_repasse': 0,
         'valor_investimento': df['valor_investimento_real'],  # NOW USING REAL VALUES!
         'valor_empenhado': 0,
@@ -174,6 +149,11 @@ def load_mcmv_to_projeto_status():
         count = mask.sum()
         avg = total / count if count > 0 else 0
         print(f"  {programa}: {count} projects, R$ {total/1e9:.2f}B total, R$ {avg/1e6:.2f}M avg")
+        
+        # Show project names sample
+        project_names = df_db.loc[mask, 'nome_empreendimento'].dropna()
+        if len(project_names) > 0:
+            print(f"    Sample names: {project_names.iloc[:2].tolist()}")
     
     total_all = df_db['valor_investimento'].sum()
     print(f"  TOTAL: {len(df_db)} projects, R$ {total_all/1e9:.2f}B")
@@ -204,11 +184,11 @@ def load_mcmv_to_projeto_status():
             print("Deleting existing MCMV data...")
             conn.execute(text("DELETE FROM projeto_status WHERE programa IN ('FAR', 'FDS', 'RURAL')"))
             
-            # Insert new data with REAL investment values
-            print("Inserting new data with REAL investment values...")
+            # Insert new data with REAL investment values AND project names
+            print("Inserting new data with REAL investment values AND project names...")
             df_db.to_sql('projeto_status', conn, if_exists='append', index=False)
         
-        print("✅ Data loaded successfully with REAL investment values!")
+        print("✅ Data loaded successfully with REAL investment values AND project names!")
         
         # Verify the results
         with db.engine.connect() as conn:
@@ -218,7 +198,8 @@ def load_mcmv_to_projeto_status():
                     COUNT(*) as count,
                     SUM(uh_estimadas) as total_uh,
                     SUM(valor_investimento)/1e9 as investment_billions,
-                    AVG(percentual_obra_realizado) as avg_pct
+                    AVG(percentual_obra_realizado) as avg_pct,
+                    COUNT(nome_empreendimento) FILTER (WHERE nome_empreendimento != '' AND nome_empreendimento IS NOT NULL) as projects_with_names
                 FROM projeto_status 
                 WHERE programa IN ('FAR', 'FDS', 'RURAL')
                 GROUP BY programa
@@ -226,23 +207,30 @@ def load_mcmv_to_projeto_status():
             """)).fetchall()
             
             print("\n" + "="*60)
-            print("✅ VERIFICATION: Database now contains REAL investment values")
+            print("✅ VERIFICATION: Database now contains REAL investment values AND project names")
             print("="*60)
             total_projects = 0
             total_uh = 0
             total_investment = 0
-            for programa, count, uh, investment, avg_pct in result:
-                print(f"  {programa}: {count} projects, {uh:,} UH, R$ {investment:.2f}B, avg {avg_pct:.2f}% complete")
+            total_with_names = 0
+            for programa, count, uh, investment, avg_pct, with_names in result:
+                print(f"  {programa}: {count} projects, {uh:,} UH, R$ {investment:.2f}B, avg {avg_pct:.2f}% complete, {with_names} with names")
                 total_projects += count
                 total_uh += uh
                 total_investment += investment
+                total_with_names += with_names
             
-            print(f"\n  TOTAL: {total_projects} projects, {total_uh:,} UH, R$ {total_investment:.2f}B")
+            print(f"\n  TOTAL: {total_projects} projects, {total_uh:,} UH, R$ {total_investment:.2f}B, {total_with_names} with names")
             
             if total_investment > 20:
                 print("✅ SUCCESS: Investment values now match Excel source data!")
             else:
                 print("❌ WARNING: Investment values still seem low - check field mappings")
+                
+            if total_with_names == total_projects:
+                print("✅ SUCCESS: All projects now have names!")
+            else:
+                print(f"⚠️  WARNING: Only {total_with_names}/{total_projects} projects have names")
             
     except Exception as e:
         print(f"❌ Error: {e}")

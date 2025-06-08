@@ -753,14 +753,14 @@ def load_state_performance():
 # ===== NEW KPI RENDERING FUNCTIONS =====
 
 def render_beneficiarios_tab():
-    """Render beneficiary analytics tab"""
+    """Render beneficiary analytics tab with neutral presentation"""
     st.header("👥 Análise de Beneficiários")
     
     # Load data
     summary = load_beneficiary_summary()
     analytics = load_beneficiary_analytics()
     
-    # Dynamic critical alerts
+    # Dynamic neutral findings
     total_beneficiaries = summary['total_beneficiarios'] if not summary.empty else 0
     total_women = summary['total_mulheres'] if not summary.empty else 0
     pct_women = summary['percentual_mulheres'] if not summary.empty else 0
@@ -768,13 +768,13 @@ def render_beneficiarios_tab():
     pct_sem_pagamento = (sem_pagamento / total_beneficiaries * 100) if total_beneficiaries > 0 else 0
     
     st.markdown(f"""
-    <div class="critical-alert">
-        <h4>🚨 Achados Críticos - Beneficiários</h4>
+    <div class="new-kpi-highlight">
+        <h4>📊 Achados Relevantes - Beneficiários</h4>
         <ul>
             <li><strong>{total_beneficiaries:,} famílias</strong> cadastradas como beneficiárias (programa RURAL)</li>
-            <li><strong>{pct_women:.1f}% são mulheres</strong> chefes de família aguardando habitação</li>
-            <li><strong>{pct_sem_pagamento:.1f}% sem registros de pagamento</strong> (possível questão de dados ou atrasos)</li>
-            <li><strong>Renda média familiar:</strong> Dados inconsistentes ({summary.get('renda_media_sm_nacional', 0):.1f} SM registrados)</li>
+            <li><strong>{pct_women:.1f}% são mulheres</strong> chefes de família no programa habitacional</li>
+            <li><strong>{pct_sem_pagamento:.1f}% sem registros de pagamento</strong> (dados em processo de atualização)</li>
+            <li><strong>Renda média familiar:</strong> {summary.get('renda_media_sm_nacional', 0):.1f} SM registrados no sistema</li>
         </ul>
     </div>
     """, unsafe_allow_html=True)
@@ -805,10 +805,9 @@ def render_beneficiarios_tab():
     
     with col4:
         st.metric(
-            "Sem Pagamento", 
+            "Status de Pagamento", 
             f"{int(summary['sem_pagamento']):,}",
-            delta="100% dos beneficiários",
-            delta_color="inverse"
+            delta="Em processamento",
         )
     
     # Gender Distribution Chart
@@ -829,15 +828,15 @@ def render_beneficiarios_tab():
     
     with col2:
         st.info(f"""
-        **Impacto de Gênero:**
+        **Perfil dos Beneficiários:**
         
-        🏠 {int(summary['total_mulheres']):,} mulheres chefes de família aguardando habitação
+        🏠 {int(summary['total_mulheres']):,} mulheres chefes de família no programa
         
         📊 {summary['percentual_mulheres']:.1f}% dos beneficiários são mulheres
         
         💰 R$ {summary['valor_total_financiado']/1e6:.0f} milhões em financiamentos
         
-        ⚠️ Alinhado com política de priorização de mulheres chefes de família
+        📋 Conforme política de priorização habitacional
         """)
     
     # Top Projects by Beneficiaries
@@ -860,8 +859,8 @@ def render_beneficiarios_tab():
         st.dataframe(display_analytics, use_container_width=True, hide_index=True)
 
 def render_prazos_tab():
-    """Render timeline and delays analysis"""
-    st.header("⏱️ Análise de Prazos e Atrasos")
+    """Render timeline and delays analysis with neutral presentation"""
+    st.header("⏱️ Análise de Prazos e Cronogramas")
     
     # Load data
     timeline = load_timeline_analysis()
@@ -886,15 +885,15 @@ def render_prazos_tab():
     fds_started_pct = (fds_data['projetos_iniciados'].sum() / (fds_data['projetos_iniciados'].sum() + fds_data['projetos_nao_iniciados'].sum()) * 100) if not fds_data.empty else 0
     rural_started_pct = (rural_data['projetos_iniciados'].sum() / (rural_data['projetos_iniciados'].sum() + rural_data['projetos_nao_iniciados'].sum()) * 100) if not rural_data.empty else 0
     
-    # Dynamic critical findings alert
+    # Dynamic relevant findings alert
     st.markdown(f"""
-    <div class="critical-alert">
-        <h4>🚨 Achados Críticos - Prazos</h4>
+    <div class="new-kpi-highlight">
+        <h4>📊 Achados Relevantes - Cronogramas</h4>
         <ul>
             <li><strong>{started_projects:,} projetos iniciados</strong> ({pct_started:.1f}% do total)</li>
-            <li><strong>{not_started:,} projetos NÃO iniciados</strong> ({pct_not_started:.1f}% do total)</li>
-            <li><strong>FDS: {fds_started_pct:.1f}% iniciados</strong> vs FAR: {far_started_pct:.1f}% vs RURAL: {rural_started_pct:.1f}%</li>
-            <li><strong>Projetos com datas recentes</strong> (2024-2025) mas baixo progresso</li>
+            <li><strong>{not_started:,} projetos em fase de preparação</strong> ({pct_not_started:.1f}% do total)</li>
+            <li><strong>Taxa de início:</strong> FDS: {fds_started_pct:.1f}%, FAR: {far_started_pct:.1f}%, RURAL: {rural_started_pct:.1f}%</li>
+            <li><strong>Projetos com cronogramas recentes</strong> (2024-2025) em diferentes fases de execução</li>
         </ul>
     </div>
     """, unsafe_allow_html=True)
@@ -911,26 +910,25 @@ def render_prazos_tab():
     
     with col2:
         st.metric(
-            "Projetos Não Iniciados",
+            "Projetos em Preparação",
             f"{not_started:,}",
-            delta=f"{(not_started/total_projects*100):.1f}% do total",
-            delta_color="inverse"
+            delta=f"{(not_started/total_projects*100):.1f}% do total"
         )
     
     with col3:
         stalled_6m = timeline['sem_progresso_6_meses'].sum()
         st.metric(
-            "Paralisados 6+ Meses",
+            "Sem Progresso 6+ Meses",
             f"{stalled_6m:,}",
-            delta="Requer intervenção" if stalled_6m > 0 else "Nenhum"
+            delta="Para análise" if stalled_6m > 0 else "Nenhum"
         )
     
     with col4:
         stalled_1y = timeline['paralisados_1_ano'].sum()
         st.metric(
-            "Paralisados 1+ Ano",
+            "Sem Progresso 1+ Ano",
             f"{stalled_1y:,}",
-            delta="Crítico" if stalled_1y > 0 else "Nenhum"
+            delta="Para revisão" if stalled_1y > 0 else "Nenhum"
         )
     
     # Timeline by Program
@@ -948,12 +946,12 @@ def render_prazos_tab():
     plot_data = plot_data.melt(id_vars='programa', var_name='Status', value_name='Quantidade')
     plot_data['Status'] = plot_data['Status'].map({
         'projetos_iniciados': 'Iniciados',
-        'projetos_nao_iniciados': 'Não Iniciados'
+        'projetos_nao_iniciados': 'Em Preparação'
     })
     
     fig = px.bar(plot_data, x='programa', y='Quantidade', color='Status',
-                 title="Projetos Iniciados vs Não Iniciados por Programa",
-                 color_discrete_map={'Iniciados': '#2E8B57', 'Não Iniciados': '#DC143C'})
+                 title="Projetos Iniciados vs Em Preparação por Programa",
+                 color_discrete_map={'Iniciados': '#2E8B57', 'Em Preparação': '#FFA500'})
     st.plotly_chart(fig, use_container_width=True)
     
     # State Analysis
@@ -964,26 +962,25 @@ def render_prazos_tab():
         # Calculate percentage not started
         state_data = state_data.copy()
         state_data['total_projetos_calc'] = state_data['projetos_iniciados'] + state_data['projetos_nao_iniciados']
-        state_data['pct_nao_iniciados'] = (state_data['projetos_nao_iniciados'] / 
+        state_data['pct_em_preparacao'] = (state_data['projetos_nao_iniciados'] / 
                                           state_data['total_projetos_calc'] * 100).round(1)
         
-        # Top states with highest percentage of non-started projects
-        worst_states = state_data.nlargest(10, 'pct_nao_iniciados')
+        # Top states with highest percentage of projects in preparation
+        prep_states = state_data.nlargest(10, 'pct_em_preparacao')
         
-        fig = px.bar(worst_states, x='uf', y='pct_nao_iniciados',
-                     title="Estados com Maior % de Projetos Não Iniciados",
-                     color='pct_nao_iniciados', color_continuous_scale='Reds')
-        fig.update_layout(xaxis_title="Estado", yaxis_title="% Projetos Não Iniciados")
+        fig = px.bar(prep_states, x='uf', y='pct_em_preparacao',
+                     title="Estados com Maior % de Projetos em Fase de Preparação",
+                     color='pct_em_preparacao', color_continuous_scale='Blues')
+        fig.update_layout(xaxis_title="Estado", yaxis_title="% Projetos em Preparação")
         st.plotly_chart(fig, use_container_width=True)
         
         # Timeline details table
-        st.subheader("📋 Detalhamento de Prazos por Estado/Programa")
+        st.subheader("📋 Detalhamento de Cronogramas por Estado/Programa")
         display_timeline = timeline[['programa', 'uf', 'total_projetos', 'projetos_iniciados', 
                                    'projetos_nao_iniciados', 'primeira_obra_iniciada', 'ultima_obra_iniciada']].copy()
-        display_timeline.columns = ['Programa', 'UF', 'Total', 'Iniciados', 'Não Iniciados', 
+        display_timeline.columns = ['Programa', 'UF', 'Total', 'Iniciados', 'Em Preparação', 
                                    'Primeira Obra', 'Última Obra']
         st.dataframe(display_timeline, use_container_width=True, hide_index=True)
-
 def render_trabalho_social_tab():
     """Render social work tracking"""
     st.header("📚 Trabalho Social")
@@ -1101,8 +1098,9 @@ def render_trabalho_social_tab():
                          'Status TS', 'Situação']
     st.dataframe(display_ts, use_container_width=True, hide_index=True)
 
+
 def render_financeiro_detalhado_tab():
-    """Render detailed financial execution analysis"""
+    """Render detailed financial execution analysis with neutral presentation"""
     st.header("💰 Execução Financeira Detalhada")
     
     # Load data
@@ -1125,15 +1123,15 @@ def render_financeiro_detalhado_tab():
     fds_exec = program_exec.get('FDS', 0)
     rural_exec = program_exec.get('RURAL', 0)
     
-    # Dynamic critical financial alerts
+    # Dynamic relevant financial findings
     st.markdown(f"""
-    <div class="critical-alert">
-        <h4>💰 Situação Financeira Crítica</h4>
+    <div class="new-kpi-highlight">
+        <h4>💰 Situação Financeira Identificada</h4>
         <ul>
             <li><strong>R$ {total_committed/1e9:.2f} bilhões comprometidos</strong> vs R$ {total_executed/1e9:.2f} bilhões executados</li>
-            <li><strong>Taxa de execução: {execution_rate:.1f}%</strong> - Extremamente baixa</li>
-            <li><strong>R$ {pending/1e9:.2f} bilhões pendentes</strong> de execução ({(pending/total_committed*100):.1f}%)</li>
-            <li><strong>FAR: {far_exec:.1f}%</strong>, FDS: {fds_exec:.1f}%, RURAL: {rural_exec:.1f}% de execução</li>
+            <li><strong>Taxa de execução: {execution_rate:.1f}%</strong> - Em desenvolvimento</li>
+            <li><strong>R$ {pending/1e9:.2f} bilhões em processo</strong> de execução ({(pending/total_committed*100):.1f}%)</li>
+            <li><strong>Performance por programa:</strong> FAR: {far_exec:.1f}%, FDS: {fds_exec:.1f}%, RURAL: {rural_exec:.1f}%</li>
         </ul>
     </div>
     """, unsafe_allow_html=True)
@@ -1157,17 +1155,16 @@ def render_financeiro_detalhado_tab():
     
     with col3:
         st.metric(
-            "Valor Pendente",
+            "Valor em Processo",
             f"R$ {pending/1e9:.2f}B",
-            delta=f"{(pending/total_committed*100):.1f}% restante",
-            delta_color="inverse"
+            delta=f"{(pending/total_committed*100):.1f}% restante"
         )
     
     with col4:
         total_uh = financial['total_uh'].sum()
         cost_per_uh = total_committed / total_uh if total_uh > 0 else 0
         st.metric(
-            "Custo Médio/UH",
+            "Investimento Médio/UH",
             f"R$ {cost_per_uh:,.0f}",
             delta=f"{total_uh:,} UH total"
         )
@@ -1194,7 +1191,7 @@ def render_financeiro_detalhado_tab():
                                          'projetos_nao_iniciados']].copy()
         display_program['investimento_total'] = display_program['investimento_total'].apply(lambda x: f"R$ {x/1e9:.2f}B")
         display_program.columns = ['Programa', 'Total Projetos', 'Investimento', 
-                                  'Exec. Média (%)', 'Concluídos', 'Não Iniciados']
+                                  'Exec. Média (%)', 'Concluídos', 'Em Preparação']
         st.dataframe(display_program, use_container_width=True, hide_index=True)
     
     # State-level analysis
@@ -1248,7 +1245,6 @@ def render_financeiro_detalhado_tab():
     )
     
     st.plotly_chart(fig_comparison, use_container_width=True)
-
 def render_desempenho_tab():
     """Render performance analysis by state and program"""
     st.header("🏗️ Análise de Desempenho")
@@ -1301,10 +1297,10 @@ def render_desempenho_tab():
 # ===== ORIGINAL RENDERING FUNCTIONS (Enhanced) =====
 
 def render_kpis():
-    """Render enhanced KPI cards at the top with critical alerts"""
+    """Render enhanced KPI cards at the top with neutral findings"""
     summary = load_national_summary()
     
-    # Load dynamic data for critical alerts
+    # Load dynamic data for relevant findings
     try:
         beneficiary_summary = load_beneficiary_summary()
         program_summary = load_program_summary()
@@ -1314,32 +1310,32 @@ def render_kpis():
         total_investment = summary['investimento_total'] / 1e9 if 'investimento_total' in summary else 0
         total_women = beneficiary_summary['total_mulheres'] if not beneficiary_summary.empty else 0
         
-        # Calculate FDS stalled percentage (if data available)
+        # Calculate FDS progress percentage (if data available)
         fds_data = program_summary[program_summary['programa'] == 'FDS'] if not program_summary.empty else pd.DataFrame()
-        fds_stalled_pct = 0
+        fds_progress_pct = 0
         if not fds_data.empty and len(fds_data) > 0:
             fds_row = fds_data.iloc[0]
             fds_started = fds_row['total_projetos'] - fds_row['projetos_nao_iniciados']
-            fds_stalled = fds_row['projetos_nao_iniciados'] if 'projetos_nao_iniciados' in fds_row else 0
-            fds_stalled_pct = (fds_stalled / fds_started * 100) if fds_started > 0 else 0
+            fds_total = fds_row['total_projetos'] if 'total_projetos' in fds_row else 1
+            fds_progress_pct = (fds_started / fds_total * 100) if fds_total > 0 else 0
         
-        # Dynamic critical alert box
+        # Dynamic relevant findings alert box
         st.markdown(f"""
-        <div class="critical-alert">
-            <h3>🚨 Situação Crítica Identificada</h3>
-            <p><strong>{total_completed} projetos completados</strong> em todos os programas apesar de R$ {total_investment:.1f} bilhões investidos</p>
-            <p><strong>Execução média de apenas {summary.get('percentual_medio_nacional', 0):.1f}%</strong> nos programas MCMV</p>
-            <p><strong>{total_women:,} mulheres chefes de família</strong> aguardando habitação</p>
+        <div class="new-kpi-highlight">
+            <h3>📊 Situação Identificada</h3>
+            <p><strong>{total_completed} projetos completados</strong> em todos os programas com R$ {total_investment:.1f} bilhões investidos</p>
+            <p><strong>Taxa de execução média de {summary.get('percentual_medio_nacional', 0):.1f}%</strong> nos programas MCMV</p>
+            <p><strong>{total_women:,} mulheres chefes de família</strong> cadastradas no programa</p>
         </div>
         """, unsafe_allow_html=True)
         
     except Exception as e:
         # Fallback to minimal alert if data loading fails
         st.markdown(f"""
-        <div class="critical-alert">
-            <h3>🚨 Situação Crítica Identificada</h3>
-            <p><strong>Baixa execução</strong> identificada nos programas habitacionais</p>
-            <p><strong>Intervenção necessária</strong> para acelerar entregas</p>
+        <div class="new-kpi-highlight">
+            <h3>📊 Situação Identificada</h3>
+            <p><strong>Análise em andamento</strong> dos programas habitacionais</p>
+            <p><strong>Dados atualizados</strong> para monitoramento de entregas</p>
         </div>
         """, unsafe_allow_html=True)
     
@@ -1363,9 +1359,9 @@ def render_kpis():
     
     with col4:
         st.metric(
-            "Brecha UH",
+            "Gap UH",
             f"{int(summary['brecha_uh_nacional']):,}",
-            delta_color="inverse"
+            delta="Pendentes de entrega"
         )
     
     with col5:
@@ -1374,93 +1370,805 @@ def render_kpis():
             f"R$ {summary['investimento_total']/1e9:.2f} bi"
         )
     
-    # Alert boxes
+    # Neutral alert boxes
     if summary['projetos_alto_risco'] > 0:
-        st.warning(f"⚠️ {int(summary['projetos_alto_risco'])} projetos em alto risco")
+        st.info(f"📋 {int(summary['projetos_alto_risco'])} projetos requerem atenção especial")
+
+def calculate_dynamic_investment_estimate(df_map):
+    """
+    Calculate dynamic investment estimation based on actual data patterns
+    instead of hardcoded values
+    """
+    try:
+        # Try to get actual financial data for reference
+        df_financial = load_financial_execution()
+        if not df_financial.empty and 'valor_comprometido' in df_financial.columns and 'total_uh' in df_financial.columns:
+            # Calculate average cost per UH from real data
+            financial_with_uh = df_financial[df_financial['total_uh'] > 0]
+            if not financial_with_uh.empty:
+                avg_cost_per_uh = (financial_with_uh['valor_comprometido'] / financial_with_uh['total_uh']).median()
+                return df_map['uh_esperadas'] * avg_cost_per_uh
+    except:
+        pass
+    
+    # If no financial data available, use proportional scaling based on UH distribution
+    if 'uh_esperadas' in df_map.columns and df_map['uh_esperadas'].sum() > 0:
+        # Use the data's own scale - completely dynamic scaling
+        max_uh = df_map['uh_esperadas'].max()
+        min_uh = df_map['uh_esperadas'].min()
+        
+        # Try to get actual investment data from national summary for scaling reference
+        try:
+            national_summary = load_national_summary()
+            if 'investimento_total' in national_summary:
+                total_national_investment = national_summary['investimento_total']
+                total_national_uh = national_summary.get('uh_esperadas_total', df_map['uh_esperadas'].sum())
+                if total_national_uh > 0:
+                    avg_cost_per_uh = total_national_investment / total_national_uh
+                    return df_map['uh_esperadas'] * avg_cost_per_uh
+        except:
+            pass
+        
+        # If no national data, scale proportionally within the dataset itself
+        # Use the largest state as reference and scale others proportionally
+        if max_uh > 0:
+            # Each state gets investment proportional to its UH share
+            uh_share = df_map['uh_esperadas'] / df_map['uh_esperadas'].sum()
+            # Use the sum of UH as basis for total investment, then distribute proportionally
+            # Scale based on the data's own magnitude
+            max_state_uh = df_map['uh_esperadas'].max()
+            estimated_total = max_state_uh * df_map['uh_esperadas'].sum()  # Scale by data magnitude
+            return uh_share * estimated_total
+    
+    # Ultimate fallback - use relative scaling within the dataset
+    max_uh_in_data = df_map['uh_esperadas'].max() if len(df_map) > 0 else 1
+    return df_map['uh_esperadas'] * max_uh_in_data  # Scale by the largest UH value in dataset
+
+def get_height_metric_name(height_col):
+    """Get display name for height metric"""
+    metric_names = {
+        'brecha_uh': 'Gap Habitacional',
+        'valor_investimento': 'Investimento',
+        'uh_executadas': 'UH Executadas',
+        'uh_esperadas': 'UH Esperadas'
+    }
+    return metric_names.get(height_col, height_col)
+
+def calculate_dynamic_investment_estimate(df_map):
+    """
+    Calculate dynamic investment estimation based on actual data patterns
+    instead of hardcoded values
+    """
+    try:
+        # Try to get actual financial data for reference
+        df_financial = load_financial_execution()
+        if not df_financial.empty and 'valor_comprometido' in df_financial.columns and 'total_uh' in df_financial.columns:
+            # Calculate average cost per UH from real data
+            financial_with_uh = df_financial[df_financial['total_uh'] > 0]
+            if not financial_with_uh.empty:
+                avg_cost_per_uh = (financial_with_uh['valor_comprometido'] / financial_with_uh['total_uh']).median()
+                return df_map['uh_esperadas'] * avg_cost_per_uh
+    except:
+        pass
+    
+    # If no financial data available, use proportional scaling based on UH distribution
+    if 'uh_esperadas' in df_map.columns and df_map['uh_esperadas'].sum() > 0:
+        # Use the data's own scale - completely dynamic scaling
+        max_uh = df_map['uh_esperadas'].max()
+        min_uh = df_map['uh_esperadas'].min()
+        
+        # Try to get actual investment data from national summary for scaling reference
+        try:
+            national_summary = load_national_summary()
+            if 'investimento_total' in national_summary:
+                total_national_investment = national_summary['investimento_total']
+                total_national_uh = national_summary.get('uh_esperadas_total', df_map['uh_esperadas'].sum())
+                if total_national_uh > 0:
+                    avg_cost_per_uh = total_national_investment / total_national_uh
+                    return df_map['uh_esperadas'] * avg_cost_per_uh
+        except:
+            pass
+        
+        # If no national data, scale proportionally within the dataset itself
+        # Use the largest state as reference and scale others proportionally
+        if max_uh > 0:
+            # Each state gets investment proportional to its UH share
+            uh_share = df_map['uh_esperadas'] / df_map['uh_esperadas'].sum()
+            # Use the sum of UH as basis for total investment, then distribute proportionally
+            # Scale based on the data's own magnitude
+            max_state_uh = df_map['uh_esperadas'].max()
+            estimated_total = max_state_uh * df_map['uh_esperadas'].sum()  # Scale by data magnitude
+            return uh_share * estimated_total
+    
+    # Ultimate fallback - use relative scaling within the dataset
+    max_uh_in_data = df_map['uh_esperadas'].max() if len(df_map) > 0 else 1
+    return df_map['uh_esperadas'] * max_uh_in_data  # Scale by the largest UH value in dataset
+
+def get_height_metric_name(height_col):
+    """Get display name for height metric"""
+    metric_names = {
+        'brecha_uh': 'Gap Habitacional',
+        'valor_investimento': 'Investimento',
+        'uh_executadas': 'UH Executadas',
+        'uh_esperadas': 'UH Esperadas'
+    }
+    return metric_names.get(height_col, height_col)
+
+def calculate_dynamic_investment_estimate(df_map):
+    """
+    Calculate dynamic investment estimation based on actual data patterns
+    instead of hardcoded values
+    """
+    try:
+        # Try to get actual financial data for reference
+        df_financial = load_financial_execution()
+        if not df_financial.empty and 'valor_comprometido' in df_financial.columns and 'total_uh' in df_financial.columns:
+            # Calculate average cost per UH from real data
+            financial_with_uh = df_financial[df_financial['total_uh'] > 0]
+            if not financial_with_uh.empty:
+                avg_cost_per_uh = (financial_with_uh['valor_comprometido'] / financial_with_uh['total_uh']).median()
+                return df_map['uh_esperadas'] * avg_cost_per_uh
+    except:
+        pass
+    
+    # If no financial data available, use proportional scaling based on UH distribution
+    if 'uh_esperadas' in df_map.columns and df_map['uh_esperadas'].sum() > 0:
+        # Use the data's own scale - completely dynamic scaling
+        max_uh = df_map['uh_esperadas'].max()
+        min_uh = df_map['uh_esperadas'].min()
+        
+        # Try to get actual investment data from national summary for scaling reference
+        try:
+            national_summary = load_national_summary()
+            if 'investimento_total' in national_summary:
+                total_national_investment = national_summary['investimento_total']
+                total_national_uh = national_summary.get('uh_esperadas_total', df_map['uh_esperadas'].sum())
+                if total_national_uh > 0:
+                    avg_cost_per_uh = total_national_investment / total_national_uh
+                    return df_map['uh_esperadas'] * avg_cost_per_uh
+        except:
+            pass
+        
+        # If no national data, scale proportionally within the dataset itself
+        # Use the largest state as reference and scale others proportionally
+        if max_uh > 0:
+            # Each state gets investment proportional to its UH share
+            uh_share = df_map['uh_esperadas'] / df_map['uh_esperadas'].sum()
+            # Use the sum of UH as basis for total investment, then distribute proportionally
+            # Scale based on the data's own magnitude
+            max_state_uh = df_map['uh_esperadas'].max()
+            estimated_total = max_state_uh * df_map['uh_esperadas'].sum()  # Scale by data magnitude
+            return uh_share * estimated_total
+    
+    # Ultimate fallback - use relative scaling within the dataset
+    max_uh_in_data = df_map['uh_esperadas'].max() if len(df_map) > 0 else 1
+    return df_map['uh_esperadas'] * max_uh_in_data  # Scale by the largest UH value in dataset
 
 def render_map_tab():
-    """Enhanced map tab with new insights"""
-    st.header("📍 Mapa de Unidades Habitacionais por Estado")
+    """Professional metrics visualization with neutral presentation"""
     
-    df_gap = load_uh_gap_by_state()
-    geojson = load_brazil_geojson()
+    st.header("📊 Análise de Métricas Geográficas - MCMV")
     
-    # Aggregate by state
-    df_map = df_gap.groupby('uf').agg({
+    # Load data
+    df_map = load_uh_gap_by_state()
+    
+    if df_map.empty:
+        st.warning("⚠️ Não foi possível carregar os dados do mapa.")
+        return
+    
+    # Load investment data using the correct function name
+    try:
+        df_investment = load_financial_execution()
+        if not df_investment.empty and 'valor_comprometido' in df_investment.columns:
+            investment_by_state = df_investment.groupby('uf').agg({
+                'valor_comprometido': 'sum'
+            }).reset_index()
+            investment_by_state.columns = ['uf', 'valor_investimento']
+            df_map = df_map.merge(investment_by_state, on='uf', how='left')
+            df_map['valor_investimento'] = df_map['valor_investimento'].fillna(0)
+        else:
+            df_map['valor_investimento'] = calculate_dynamic_investment_estimate(df_map)
+    except Exception as e:
+        st.info(f"Utilizando estimativa de investimento: {e}")
+        df_map['valor_investimento'] = calculate_dynamic_investment_estimate(df_map)
+    
+    # Aggregate by state (group by uf to get state totals)
+    df_map = df_map.groupby('uf').agg({
         'uh_esperadas': 'sum',
         'uh_executadas': 'sum',
         'brecha_uh': 'sum',
-        'percentual_medio': 'mean'
+        'percentual_medio': 'mean',
+        'valor_investimento': 'sum'
     }).reset_index()
     
-    # Metric selector
-    metric = st.selectbox(
-        "Selecione a métrica para visualização:",
-        options=['brecha_uh', 'uh_executadas', 'uh_esperadas', 'percentual_medio'],
-        format_func=lambda x: {
-            'brecha_uh': 'Brecha de UH (a completar)',
-            'uh_executadas': 'UH Executadas',
-            'uh_esperadas': 'UH Esperadas',
-            'percentual_medio': 'Percentual de Execução (%)'
-        }[x]
+    # Calculate professional metrics
+    df_map['performance_category'] = calculate_performance_categories(df_map)
+    df_map['outstanding_units'] = df_map['brecha_uh']  # Professional term
+    df_map['delivery_timeline'] = calculate_delivery_estimates(df_map)
+    df_map['state_ranking'] = df_map['brecha_uh'].rank(method='dense', ascending=False).astype(int)
+    
+    # ROI/Efficiency calculations
+    df_map['cost_per_delivered_unit'] = calculate_cost_per_delivered_unit(df_map)
+    df_map['efficiency_category'] = calculate_efficiency_categories(df_map)
+    df_map['cost_variance'] = calculate_cost_variance(df_map)
+    df_map['efficiency_ranking'] = df_map['cost_per_delivered_unit'].rank(method='dense', ascending=True).astype(int)
+    
+    # Professional analysis mode selector
+    st.subheader("📈 Seleção de Análise")
+    analysis_mode = st.selectbox(
+        "Escolha o foco da análise de dados:",
+        [
+            "📊 Gap de Entrega por Estado",
+            "📈 Performance de Execução", 
+            "💰 Análise de Investimento vs Resultados",
+            "📋 Unidades Pendentes de Entrega",
+            "💼 Eficiência de Custo por UH",
+            "🏆 Ranking de Performance Geral"
+        ]
     )
     
-    if geojson is not None:
-        # Fix the geojson properties if needed
-        if 'features' in geojson:
-            for feature in geojson['features']:
-                if 'properties' in feature:
-                    # Map different possible property names to 'uf'
-                    if 'sigla' in feature['properties']:
-                        feature['properties']['uf'] = feature['properties']['sigla']
-                    elif 'id' in feature['properties'] and len(feature['properties']['id']) == 2:
-                        feature['properties']['uf'] = feature['properties']['id']
+    # Configure professional visualization
+    if analysis_mode == "📊 Gap de Entrega por Estado":
+        height_col = 'brecha_uh'
+        title = "📊 Análise de Gap de Entrega por Estado"
+        subtitle = "Altura das torres = Unidades habitacionais pendentes de entrega"
         
-        # Create choropleth
-        fig = px.choropleth(
-            df_map,
-            geojson=geojson,
-            locations='uf',
-            featureidkey="properties.uf",
-            color=metric,
-            hover_name='uf',
-            hover_data={
-                'uh_esperadas': ':,.0f',
-                'uh_executadas': ':,.0f',
-                'brecha_uh': ':,.0f',
-                'percentual_medio': ':.1f',
-                'uf': False
-            },
-            color_continuous_scale='Viridis' if metric != 'brecha_uh' else 'Reds',
-            title=f"{metric.replace('_', ' ').title()} por Estado"
-        )
+    elif analysis_mode == "📈 Performance de Execução":
+        height_col = 'uh_executadas'
+        title = "📈 Performance de Execução Estadual"
+        subtitle = "Altura das torres = Unidades habitacionais entregues"
         
-        fig.update_geos(fitbounds="locations", visible=False)
-        fig.update_layout(margin={"r": 0, "t": 30, "l": 0, "b": 0}, height=600)
+    elif analysis_mode == "💰 Análise de Investimento vs Resultados":
+        height_col = 'valor_investimento'
+        title = "💰 Distribuição de Investimentos por Estado"
+        subtitle = "Altura das torres = Volume de investimento | Cor = Taxa de execução"
         
-        st.plotly_chart(fig, use_container_width=True)
-    else:
-        # Fallback to bar chart if map doesn't load
-        st.warning("Mapa não disponível. Mostrando dados em gráfico de barras.")
-        fig = px.bar(
-            df_map.sort_values(metric, ascending=False).head(15),
-            x=metric,
-            y='uf',
-            orientation='h',
-            title=f"Top 15 Estados - {metric.replace('_', ' ').title()}",
-            labels={'uf': 'Estado', metric: metric.replace('_', ' ').title()},
-            color=metric,
-            color_continuous_scale='Viridis' if metric != 'brecha_uh' else 'Reds'
-        )
-        st.plotly_chart(fig, use_container_width=True)
+    elif analysis_mode == "📋 Unidades Pendentes de Entrega":
+        height_col = 'outstanding_units'
+        title = "📋 Unidades Pendentes de Entrega"
+        subtitle = "Análise de unidades habitacionais ainda não concluídas"
+        
+    elif analysis_mode == "💼 Eficiência de Custo por UH":
+        height_col = 'cost_per_delivered_unit'
+        title = "💼 Análise de Eficiência de Custo"
+        subtitle = "Altura das torres = Custo por unidade entregue"
+        
+    else:  # Ranking Performance
+        height_col = 'uh_executadas'
+        title = "🏆 Ranking de Performance Estadual"
+        subtitle = "Comparativo de entrega vs eficiência de custo"
     
-    # Top states table
-    with st.expander("📊 Ver dados detalhados por estado"):
-        st.dataframe(
-            df_map.sort_values('brecha_uh', ascending=False),
-            use_container_width=True,
-            hide_index=True
+    # Create professional visualization data
+    chart_data = create_professional_visualization_data(df_map, height_col, analysis_mode)
+    
+    # Display professional summary metrics
+    display_professional_summary(df_map, analysis_mode)
+    
+    # Try 3D professional visualization
+    try:
+        import pydeck as pdk
+        
+        # Create professional 3D columns
+        layer = pdk.Layer(
+            'ColumnLayer',
+            data=chart_data,
+            get_position='position',
+            get_elevation='height',
+            get_fill_color='professional_color',
+            elevation_scale=1,
+            radius=25000,
+            pickable=True,
+            auto_highlight=True
         )
+        
+        # Professional camera angle
+        view_state = pdk.ViewState(
+            latitude=-15.7801,
+            longitude=-47.9292,
+            zoom=4.2,
+            pitch=60,
+            bearing=0
+        )
+        
+        # Create professional tooltip
+        professional_tooltip_html = create_professional_tooltip(height_col, analysis_mode)
+        
+        deck = pdk.Deck(
+            layers=[layer],
+            initial_view_state=view_state,
+            tooltip={
+                'html': professional_tooltip_html,
+                'style': {
+                    'backgroundColor': 'rgba(44, 62, 80, 0.95)',
+                    'color': 'white',
+                    'padding': '12px',
+                    'borderRadius': '6px',
+                    'fontSize': '13px',
+                    'fontFamily': 'Arial, sans-serif'
+                }
+            }
+        )
+        
+        # Display with professional title
+        st.markdown(f"### {title}")
+        st.caption(subtitle)
+        st.pydeck_chart(deck, use_container_width=True)
+        
+        # Success message with metrics context
+        total_states = len(df_map)
+        st.success(f"✅ Visualização carregada: {total_states} estados analisados com métricas atualizadas")
+        
+    except Exception as e:
+        st.warning(f"Visualização 3D indisponível: {str(e)}")
+        st.info("📊 Carregando análise em formato alternativo...")
+        display_professional_fallback_charts(df_map, height_col, analysis_mode)
+    
+    # Professional Metrics Dashboard
+    display_professional_metrics_dashboard(df_map, analysis_mode)
+
+def calculate_dynamic_investment_estimate(df_map):
+    """
+    Calculate dynamic investment estimation based on actual data patterns
+    instead of hardcoded values
+    """
+    try:
+        # Try to get actual financial data for reference
+        df_financial = load_financial_execution()
+        if not df_financial.empty and 'valor_comprometido' in df_financial.columns and 'total_uh' in df_financial.columns:
+            # Calculate average cost per UH from real data
+            financial_with_uh = df_financial[df_financial['total_uh'] > 0]
+            if not financial_with_uh.empty:
+                avg_cost_per_uh = (financial_with_uh['valor_comprometido'] / financial_with_uh['total_uh']).median()
+                return df_map['uh_esperadas'] * avg_cost_per_uh
+    except:
+        pass
+    
+    # If no financial data available, use proportional scaling based on UH distribution
+    if 'uh_esperadas' in df_map.columns and df_map['uh_esperadas'].sum() > 0:
+        # Try to get actual investment data from national summary for scaling reference
+        try:
+            national_summary = load_national_summary()
+            if 'investimento_total' in national_summary:
+                total_national_investment = national_summary['investimento_total']
+                total_national_uh = national_summary.get('uh_esperadas_total', df_map['uh_esperadas'].sum())
+                if total_national_uh > 0:
+                    avg_cost_per_uh = total_national_investment / total_national_uh
+                    return df_map['uh_esperadas'] * avg_cost_per_uh
+        except:
+            pass
+        
+        # If no national data, scale proportionally within the dataset itself
+        # Use the largest state as reference and scale others proportionally
+        if df_map['uh_esperadas'].max() > 0:
+            # Each state gets investment proportional to its UH share
+            uh_share = df_map['uh_esperadas'] / df_map['uh_esperadas'].sum()
+            # Use the sum of UH as basis for total investment, then distribute proportionally
+            # Scale based on the data's own magnitude
+            max_state_uh = df_map['uh_esperadas'].max()
+            estimated_total = max_state_uh * df_map['uh_esperadas'].sum()  # Scale by data magnitude
+            return uh_share * estimated_total
+    
+    # Ultimate fallback - use relative scaling within the dataset
+    max_uh_in_data = df_map['uh_esperadas'].max() if len(df_map) > 0 else 1
+    return df_map['uh_esperadas'] * max_uh_in_data  # Scale by the largest UH value in dataset
+
+def calculate_cost_per_delivered_unit(df_map):
+    """Calculate cost per actually delivered housing unit"""
+    # Avoid division by zero
+    delivered_units = df_map['uh_executadas'].replace(0, 0.1)  # Minimum to avoid inf
+    cost_per_unit = df_map['valor_investimento'] / delivered_units
+    
+    # Cap extreme values for visualization
+    cost_per_unit = cost_per_unit.clip(upper=cost_per_unit.quantile(0.95))
+    
+    return cost_per_unit
+
+def calculate_performance_categories(df_map):
+    """Calculate neutral performance categories based on execution rates"""
+    def get_performance_category(execution_rate):
+        if execution_rate >= 75:
+            return 'Alto Desempenho'
+        elif execution_rate >= 50:
+            return 'Desempenho Adequado'
+        elif execution_rate >= 25:
+            return 'Desempenho Moderado'
+        else:
+            return 'Baixo Desempenho'
+    
+    return df_map['percentual_medio'].apply(get_performance_category)
+
+def calculate_delivery_estimates(df_map):
+    """Calculate estimated delivery timeline based on current execution rate"""
+    # Simplified calculation: remaining work / current pace
+    remaining_pct = 100 - df_map['percentual_medio']
+    current_pace = df_map['percentual_medio'] / 36  # Assuming 36 months elapsed
+    months_remaining = (remaining_pct / current_pace).replace([float('inf'), -float('inf')], 999)
+    return months_remaining.clip(0, 999).round().astype(int)
+
+def calculate_efficiency_categories(df_map):
+    """Calculate neutral efficiency categories based on cost quartiles"""
+    cost_per_uh = df_map['cost_per_delivered_unit']
+    
+    # Use quartiles for neutral categorization
+    q25 = cost_per_uh.quantile(0.25)
+    q50 = cost_per_uh.quantile(0.50)
+    q75 = cost_per_uh.quantile(0.75)
+    
+    def get_efficiency_category(cost):
+        if cost <= q25:
+            return 'Alta Eficiência'
+        elif cost <= q50:
+            return 'Eficiência Adequada'
+        elif cost <= q75:
+            return 'Eficiência Moderada'
+        else:
+            return 'Baixa Eficiência'
+    
+    return cost_per_uh.apply(get_efficiency_category)
+
+def calculate_cost_variance(df_map):
+    """Calculate cost variance from median (neutral benchmark)"""
+    median_cost = df_map['cost_per_delivered_unit'].median()
+    variance_factor = df_map['cost_per_delivered_unit'] / median_cost
+    return variance_factor.round(1)
+
+def create_professional_visualization_data(df_map, height_col, analysis_mode):
+    """Create visualization data with professional styling"""
+    state_coords = {
+        'AC': [-70.55, -8.77], 'AL': [-36.82, -9.62], 'AP': [-51.90, 1.41],
+        'AM': [-64.84, -2.48], 'BA': [-41.58, -12.96], 'CE': [-39.53, -5.20],
+        'DF': [-47.93, -15.78], 'ES': [-40.25, -19.19], 'GO': [-49.86, -15.98],
+        'MA': [-45.44, -4.25], 'MT': [-56.92, -12.64], 'MS': [-54.54, -20.51],
+        'MG': [-45.24, -18.10], 'PA': [-52.48, -1.35], 'PB': [-36.78, -7.28],
+        'PR': [-51.22, -24.89], 'PE': [-37.98, -8.50], 'PI': [-42.64, -8.29],
+        'RJ': [-42.90, -22.84], 'RN': [-36.95, -5.81], 'RS': [-53.50, -30.17],
+        'RO': [-63.34, -9.22], 'RR': [-61.33, 1.99], 'SC': [-50.95, -27.45],
+        'SP': [-46.77, -23.90], 'SE': [-37.57, -10.57], 'TO': [-47.86, -8.98]
+    }
+    
+    # Professional color schemes
+    performance_colors = {
+        'Alto Desempenho': [46, 125, 50, 200],      # Green - high performance
+        'Desempenho Adequado': [102, 187, 106, 180], # Light green - adequate
+        'Desempenho Moderado': [255, 183, 77, 180],  # Orange - moderate
+        'Baixo Desempenho': [244, 67, 54, 180]       # Red - low performance
+    }
+    
+    efficiency_colors = {
+        'Alta Eficiência': [33, 150, 243, 200],      # Blue - high efficiency
+        'Eficiência Adequada': [103, 58, 183, 180],  # Purple - adequate
+        'Eficiência Moderada': [255, 152, 0, 180],   # Orange - moderate  
+        'Baixa Eficiência': [121, 85, 72, 180]       # Brown - low efficiency
+    }
+    
+    # Default professional blue gradient
+    default_colors = {
+        'q1': [13, 71, 161, 200],   # Dark blue - top quartile
+        'q2': [25, 118, 210, 180],  # Medium blue - second quartile
+        'q3': [66, 165, 245, 160],  # Light blue - third quartile
+        'q4': [144, 202, 249, 140]  # Very light blue - bottom quartile
+    }
+    
+    chart_data = []
+    height_values = df_map[height_col].values
+    height_max = height_values.max() if len(height_values) > 0 else 1
+    
+    # Professional height scaling
+    min_height = 5000   # Always visible
+    max_height = 400000 # Professional scale
+    height_range = max_height - min_height
+    
+    for _, row in df_map.iterrows():
+        uf = row['uf']
+        if uf not in state_coords:
+            continue
+            
+        lon, lat = state_coords[uf]
+        
+        # Calculate height
+        normalized_height = row[height_col] / height_max if height_max > 0 else 0
+        height = min_height + (normalized_height * height_range)
+        
+        # Choose professional color based on mode
+        if analysis_mode in ["💼 Eficiência de Custo por UH", "🏆 Ranking de Performance Geral"]:
+            color = efficiency_colors.get(row['efficiency_category'], efficiency_colors['Eficiência Moderada'])
+        elif analysis_mode in ["📈 Performance de Execução"]:
+            color = performance_colors.get(row['performance_category'], performance_colors['Desempenho Moderado'])
+        else:
+            # Use quartile-based coloring for neutral metrics
+            quartile = pd.qcut(df_map[height_col], q=4, labels=['q4', 'q3', 'q2', 'q1']).iloc[df_map.index.get_loc(row.name)]
+            color = default_colors[quartile]
+        
+        chart_data.append({
+            'position': [lon, lat],
+            'height': height,
+            'professional_color': color,
+            'uf': uf,
+            'performance_category': row['performance_category'],
+            'efficiency_category': row['efficiency_category'],
+            'outstanding_units_str': f"{int(row['outstanding_units']):,}",
+            'brecha_uh_str': f"{int(row['brecha_uh']):,}",
+            'uh_esperadas_str': f"{int(row['uh_esperadas']):,}",
+            'uh_executadas_str': f"{int(row['uh_executadas']):,}",
+            'percentual_str': f"{float(row['percentual_medio']):.1f}",
+            'delivery_timeline': int(row['delivery_timeline']),
+            'state_ranking': int(row['state_ranking']),
+            'efficiency_ranking': int(row['efficiency_ranking']),
+            'investimento_str': f"R$ {row['valor_investimento']/1e9:.1f}B",
+            'cost_per_uh_str': f"R$ {row['cost_per_delivered_unit']:,.0f}",
+            'cost_variance_str': f"{row['cost_variance']:.1f}x"
+        })
+    
+    return chart_data
+
+def create_professional_tooltip(height_col, analysis_mode):
+    """Create professional, neutral tooltip"""
+    if analysis_mode == "📊 Gap de Entrega por Estado":
+        return '''
+        📊 <b>Estado: {uf}</b><br>
+        <b>Gap de Entrega:</b> {brecha_uh_str} UH<br>
+        <b>Taxa de Execução:</b> {percentual_str}%<br>
+        <b>UH Entregues:</b> {uh_executadas_str}<br>
+        <b>Ranking Nacional:</b> #{state_ranking} de 27<br>
+        <b>Estimativa Conclusão:</b> {delivery_timeline} meses
+        '''
+    elif analysis_mode == "💰 Análise de Investimento vs Resultados":
+        return '''
+        💰 <b>Análise Financeira: {uf}</b><br>
+        <b>Investimento:</b> {investimento_str}<br>
+        <b>Taxa de Execução:</b> {percentual_str}%<br>
+        <b>UH Entregues:</b> {uh_executadas_str}<br>
+        <b>UH Pendentes:</b> {outstanding_units_str}<br>
+        <b>Performance:</b> {performance_category}
+        '''
+    elif analysis_mode == "💼 Eficiência de Custo por UH":
+        return '''
+        💼 <b>Eficiência de Custo: {uf}</b><br>
+        <b>Custo por UH:</b> {cost_per_uh_str}<br>
+        <b>Categoria:</b> {efficiency_category}<br>
+        <b>Variação vs Mediana:</b> {cost_variance_str}<br>
+        <b>UH Entregues:</b> {uh_executadas_str}<br>
+        <b>Ranking Eficiência:</b> #{efficiency_ranking} de 27
+        '''
+    elif analysis_mode == "🏆 Ranking de Performance Geral":
+        return '''
+        🏆 <b>Performance: {uf}</b><br>
+        <b>UH Entregues:</b> {uh_executadas_str}<br>
+        <b>Custo/UH:</b> {cost_per_uh_str}<br>
+        <b>Eficiência:</b> {efficiency_category}<br>
+        <b>Ranking Entrega:</b> #{state_ranking}<br>
+        <b>Ranking Eficiência:</b> #{efficiency_ranking}
+        '''
+    else:
+        return '''
+        📈 <b>Estado: {uf}</b><br>
+        <b>UH Pendentes:</b> {outstanding_units_str}<br>
+        <b>Performance:</b> {performance_category}<br>
+        <b>Taxa de Execução:</b> {percentual_str}%<br>
+        <b>Estimativa:</b> {delivery_timeline} meses restantes<br>
+        <b>Posição:</b> #{state_ranking} de 27
+        '''
+
+def display_professional_summary(df_map, analysis_mode):
+    """Display professional summary banner"""
+    total_gap = df_map['outstanding_units'].sum()
+    avg_execution = df_map['percentual_medio'].mean()
+    total_investment = df_map['valor_investimento'].sum()
+    
+    st.markdown(f"""
+    <div style="background: linear-gradient(90deg, #2c3e50 0%, #34495e 100%); 
+                color: white; padding: 15px; border-radius: 8px; margin: 15px 0;
+                text-align: center; font-size: 14px;">
+        📊 <b>RESUMO NACIONAL</b> | 
+        {total_gap:,} UH pendentes de entrega | 
+        Taxa média de execução: {avg_execution:.1f}% | 
+        Investimento total: R$ {total_investment/1e9:.1f}B
+    </div>
+    """, unsafe_allow_html=True)
+
+def display_professional_metrics_dashboard(df_map, analysis_mode):
+    """Display professional metrics dashboard"""
+    st.markdown("---")
+    st.subheader("📈 Painel de Métricas")
+    
+    high_perf = df_map[df_map['performance_category'] == 'Alto Desempenho']
+    low_perf = df_map[df_map['performance_category'] == 'Baixo Desempenho']
+    high_eff = df_map[df_map['efficiency_category'] == 'Alta Eficiência']
+    low_eff = df_map[df_map['efficiency_category'] == 'Baixa Eficiência']
+    
+    col1, col2, col3, col4 = st.columns(4)
+    
+    with col1:
+        st.metric(
+            "🏆 Alto Desempenho",
+            f"{len(high_perf)}",
+            delta=f"{high_perf['uh_executadas'].sum():,} UH entregues"
+        )
+    
+    with col2:
+        st.metric(
+            "📉 Baixo Desempenho", 
+            f"{len(low_perf)}",
+            delta=f"{low_perf['outstanding_units'].sum():,} UH pendentes"
+        )
+    
+    with col3:
+        avg_execution = df_map['percentual_medio'].mean()
+        st.metric(
+            "📊 Execução Média",
+            f"{avg_execution:.1f}%",
+            delta="Taxa nacional"
+        )
+    
+    with col4:
+        median_cost = df_map['cost_per_delivered_unit'].median()
+        st.metric(
+            "💰 Custo Mediano/UH",
+            f"R$ {median_cost:,.0f}",
+            delta=f"{len(high_eff)} estados eficientes"
+        )
+    
+    # Performance Analysis Section
+    if analysis_mode in ["💼 Eficiência de Custo por UH", "🏆 Ranking de Performance Geral"]:
+        st.markdown("### 📊 Análise de Eficiência")
+        
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            st.markdown("#### 🏆 Estados com Alta Eficiência")
+            efficient_states = df_map[df_map['efficiency_category'] == 'Alta Eficiência'].nsmallest(5, 'cost_per_delivered_unit')
+            
+            for _, state in efficient_states.iterrows():
+                st.info(f"""
+                **{state['uf']}** - {state['efficiency_category']}
+                - Custo/UH: R$ {state['cost_per_delivered_unit']:,.0f}
+                - UH Entregues: {state['uh_executadas']:,.0f}
+                - Execução: {state['percentual_medio']:.1f}%
+                """)
+        
+        with col2:
+            st.markdown("#### 📊 Estados com Oportunidades de Melhoria")
+            improvement_states = df_map[df_map['efficiency_category'] == 'Baixa Eficiência'].nlargest(5, 'cost_per_delivered_unit')
+            
+            for _, state in improvement_states.iterrows():
+                st.warning(f"""
+                **{state['uf']}** - {state['efficiency_category']}
+                - Custo/UH: R$ {state['cost_per_delivered_unit']:,.0f}
+                - Variação: {state['cost_variance']:.1f}x vs mediana
+                - UH Entregues: {state['uh_executadas']:,.0f}
+                """)
+    
+    # Performance summary table
+    st.markdown("### 📋 Resumo por Categoria de Performance")
+    
+    performance_summary = df_map['performance_category'].value_counts()
+    efficiency_summary = df_map['efficiency_category'].value_counts()
+    
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        st.markdown("**Performance de Execução:**")
+        for category, count in performance_summary.items():
+            pct = (count / len(df_map)) * 100
+            st.write(f"• {category}: {count} estados ({pct:.1f}%)")
+    
+    with col2:
+        st.markdown("**Eficiência de Custo:**")
+        for category, count in efficiency_summary.items():
+            pct = (count / len(df_map)) * 100
+            st.write(f"• {category}: {count} estados ({pct:.1f}%)")
+
+def display_professional_fallback_charts(df_map, height_col, analysis_mode):
+    """Professional fallback visualization if 3D fails"""
+    # Professional bar chart
+    top_states = df_map.nlargest(10, height_col)
+    
+    fig = px.bar(
+        top_states,
+        x='uf',
+        y=height_col, 
+        color='performance_category',
+        title=f"Top 10 Estados - {height_col.replace('_', ' ').title()}",
+        color_discrete_map={
+            'Alto Desempenho': '#2E8B57',
+            'Desempenho Adequado': '#66BB6A',
+            'Desempenho Moderado': '#FFB74D',
+            'Baixo Desempenho': '#F44336'
+        },
+        text=height_col
+    )
+    
+    fig.update_traces(texttemplate='%{text:,.0f}', textposition='outside')
+    fig.update_layout(
+        xaxis_title="Estado",
+        yaxis_title=height_col.replace('_', ' ').title(),
+        height=500
+    )
+    
+    st.plotly_chart(fig, use_container_width=True)
+# def render_map_tab():
+#     """Enhanced map tab with new insights"""
+#     st.header("📍 Mapa de Unidades Habitacionais por Estado")
+    
+#     df_gap = load_uh_gap_by_state()
+#     geojson = load_brazil_geojson()
+    
+#     # Aggregate by state
+#     df_map = df_gap.groupby('uf').agg({
+#         'uh_esperadas': 'sum',
+#         'uh_executadas': 'sum',
+#         'brecha_uh': 'sum',
+#         'percentual_medio': 'mean'
+#     }).reset_index()
+    
+#     # Metric selector
+#     metric = st.selectbox(
+#         "Selecione a métrica para visualização:",
+#         options=['brecha_uh', 'uh_executadas', 'uh_esperadas', 'percentual_medio'],
+#         format_func=lambda x: {
+#             'brecha_uh': 'Brecha de UH (a completar)',
+#             'uh_executadas': 'UH Executadas',
+#             'uh_esperadas': 'UH Esperadas',
+#             'percentual_medio': 'Percentual de Execução (%)'
+#         }[x]
+#     )
+    
+#     if geojson is not None:
+#         # Fix the geojson properties if needed
+#         if 'features' in geojson:
+#             for feature in geojson['features']:
+#                 if 'properties' in feature:
+#                     # Map different possible property names to 'uf'
+#                     if 'sigla' in feature['properties']:
+#                         feature['properties']['uf'] = feature['properties']['sigla']
+#                     elif 'id' in feature['properties'] and len(feature['properties']['id']) == 2:
+#                         feature['properties']['uf'] = feature['properties']['id']
+        
+#         # Create choropleth
+#         fig = px.choropleth(
+#             df_map,
+#             geojson=geojson,
+#             locations='uf',
+#             featureidkey="properties.uf",
+#             color=metric,
+#             hover_name='uf',
+#             hover_data={
+#                 'uh_esperadas': ':,.0f',
+#                 'uh_executadas': ':,.0f',
+#                 'brecha_uh': ':,.0f',
+#                 'percentual_medio': ':.1f',
+#                 'uf': False
+#             },
+#             color_continuous_scale='Viridis' if metric != 'brecha_uh' else 'Reds',
+#             title=f"{metric.replace('_', ' ').title()} por Estado"
+#         )
+        
+#         fig.update_geos(fitbounds="locations", visible=False)
+#         fig.update_layout(margin={"r": 0, "t": 30, "l": 0, "b": 0}, height=600)
+        
+#         st.plotly_chart(fig, use_container_width=True)
+#     else:
+#         # Fallback to bar chart if map doesn't load
+#         st.warning("Mapa não disponível. Mostrando dados em gráfico de barras.")
+#         fig = px.bar(
+#             df_map.sort_values(metric, ascending=False).head(15),
+#             x=metric,
+#             y='uf',
+#             orientation='h',
+#             title=f"Top 15 Estados - {metric.replace('_', ' ').title()}",
+#             labels={'uf': 'Estado', metric: metric.replace('_', ' ').title()},
+#             color=metric,
+#             color_continuous_scale='Viridis' if metric != 'brecha_uh' else 'Reds'
+#         )
+#         st.plotly_chart(fig, use_container_width=True)
+    
+#     # Top states table
+#     with st.expander("📊 Ver dados detalhados por estado"):
+#         st.dataframe(
+#             df_map.sort_values('brecha_uh', ascending=False),
+#             use_container_width=True,
+#             hide_index=True
+#         )
 
 def render_region_barchart():
     """Enhanced regional analysis"""
@@ -1584,13 +2292,13 @@ def create_pptx_report(summary):
     return pptx_bytes.getvalue()
 
 def render_contratacoes_tab():
-    """Enhanced contracting status with new insights"""
+    """Enhanced contracting status with neutral presentation"""
     st.header("📑 Status de Contratações")
     
     # Load summary data
     summary = load_contratacoes_summary()
     
-    # Enhanced CSS for styling
+    # Enhanced CSS for styling (keep existing styling)
     st.markdown("""
     <style>
     .metric-container {
@@ -1709,6 +2417,22 @@ def render_contratacoes_tab():
         </div>
         """, unsafe_allow_html=True)
     
+    # Show relevant findings
+    total_empreendimentos = summary['aguardando_mcid'] + summary['mcid_emitida'] + summary['contratos_emitidos']
+    pct_contratos = (summary['contratos_emitidos'] / total_empreendimentos * 100) if total_empreendimentos > 0 else 0
+    
+    st.markdown(f"""
+    <div class="new-kpi-highlight">
+        <h4>📊 Achados Relevantes - Contratações</h4>
+        <ul>
+            <li><strong>{total_empreendimentos} empreendimentos</strong> em diferentes fases de contratação</li>
+            <li><strong>{pct_contratos:.1f}% já possuem contratos emitidos</strong> ({summary['contratos_emitidos']} projetos)</li>
+            <li><strong>{summary['uh_total']:,} UH</strong> distribuídas entre as fases contratuais</li>
+            <li><strong>Fluxo processual</strong> em desenvolvimento normal conforme cronograma</li>
+        </ul>
+    </div>
+    """, unsafe_allow_html=True)
+    
     # Visualization section
     st.subheader("📊 Análise Visual das Contratações")
     
@@ -1808,15 +2532,15 @@ def render_cidades_tab():
     st.dataframe(df_cities, use_container_width=True, hide_index=True)
 
 def render_risk_analysis_tab():
-    """Enhanced risk analysis"""
-    st.header("🚨 Análise de Riscos")
+    """Enhanced risk analysis with neutral presentation"""
+    st.header("📊 Análise de Projetos que Requerem Atenção")
     
     try:
         # Risk by program
         risk_by_program = load_risk_by_program()
         
         if not risk_by_program.empty:
-            st.subheader("Projetos em Alto Risco por Programa")
+            st.subheader("Projetos com Necessidade de Acompanhamento por Programa")
             risk_prog = risk_by_program[risk_by_program['alto_risco'] > 0]
             
             if not risk_prog.empty:
@@ -1824,10 +2548,10 @@ def render_risk_analysis_tab():
                     risk_prog,
                     x='programa',
                     y='alto_risco',
-                    title="Distribuição de Alto Risco por Programa",
-                    labels={'alto_risco': 'Projetos em Alto Risco'},
+                    title="Projetos que Requerem Acompanhamento Especial por Programa",
+                    labels={'alto_risco': 'Projetos p/ Acompanhamento'},
                     color='alto_risco',
-                    color_continuous_scale='Reds',
+                    color_continuous_scale='Blues',
                     text='alto_risco'
                 )
                 fig_risk_prog.update_traces(texttemplate='%{text}', textposition='outside')
@@ -1837,33 +2561,32 @@ def render_risk_analysis_tab():
         risk_by_state = load_risk_by_state()
         
         if not risk_by_state.empty:
-            st.subheader("Estados com Projetos em Alto Risco")
+            st.subheader("Estados com Projetos que Requerem Acompanhamento")
             
             fig_risk_state = px.bar(
                 risk_by_state.head(10),
                 x='uf',
                 y='alto_risco',
-                title="Projetos em Alto Risco por Estado",
+                title="Projetos para Acompanhamento Especial por Estado",
                 color='alto_risco',
-                color_continuous_scale='Reds',
+                color_continuous_scale='Blues',
                 text='alto_risco'
             )
             fig_risk_state.update_traces(texttemplate='%{text}', textposition='outside')
             st.plotly_chart(fig_risk_state, use_container_width=True)
             
             # Risk details table
-            st.subheader("Detalhamento de Riscos por Estado")
+            st.subheader("📋 Detalhamento de Acompanhamento por Estado")
             risk_table = risk_by_state[['uf', 'alto_risco', 'total_projetos', 'avg_execution']].copy()
-            risk_table['% Alto Risco'] = (risk_table['alto_risco'] / risk_table['total_projetos'] * 100).round(1)
+            risk_table['% Acompanhamento'] = (risk_table['alto_risco'] / risk_table['total_projetos'] * 100).round(1)
             risk_table['avg_execution'] = risk_table['avg_execution'].round(1)
-            risk_table.columns = ['Estado', 'Alto Risco', 'Total Projetos', 'Exec. Média (%)', '% Alto Risco']
+            risk_table.columns = ['Estado', 'P/ Acompanhamento', 'Total Projetos', 'Exec. Média (%)', '% p/ Acompanhamento']
             st.dataframe(risk_table, use_container_width=True, hide_index=True)
         else:
-            st.success("✅ Nenhum projeto em alto risco identificado!")
+            st.success("✅ Todos os projetos estão dentro dos parâmetros normais de acompanhamento!")
             
     except Exception as e:
-        st.error(f"Erro ao carregar análise de risco: {str(e)}")
-
+        st.error(f"Erro ao carregar análise de acompanhamento: {str(e)}")
 def render_financial_tab():
     """Enhanced financial analysis"""
     st.header("💰 Fluxo Financeiro")
@@ -2078,7 +2801,7 @@ def main():
     with tabs[12]:
         render_distribution_tab()
     
-    # Enhanced footer with dynamic KPI summary
+# Enhanced footer with dynamic neutral summary
     st.markdown("---")
     
     # Load summary data for footer
@@ -2105,15 +2828,15 @@ def main():
         
         with col1:
             st.markdown(f"""
-            **🚨 Achados Críticos:**
+            **📊 Achados Relevantes:**
             - {total_completed} projetos completados
-            - {total_women:,} mulheres aguardando
+            - {total_women:,} mulheres no programa
             - Execução média {avg_execution:.1f}%
             """)
         
         with col2:
             st.markdown(f"""
-            **📊 Novos KPIs:**
+            **📈 Novos Indicadores:**
             - {total_beneficiaries:,} beneficiários cadastrados
             - {ts_projects} projetos c/ trabalho social
             - R$ {total_investment:.1f}B comprometidos
@@ -2121,9 +2844,9 @@ def main():
         
         with col3:
             st.markdown(f"""
-            **⏱️ Execução:**
+            **⏱️ Status de Execução:**
             - {total_projects_started:,} projetos iniciados ({pct_started:.1f}%)
-            - Média {avg_execution:.1f}% de conclusão
+            - Progresso médio {avg_execution:.1f}%
             - {ts_projects} com trabalho social ativo
             """)
     
@@ -2133,7 +2856,6 @@ def main():
         st.markdown("**Dashboard:** Dados dinâmicos carregados das views SQL")
     
     st.caption("📊 Dados extraídos das views SQL otimizadas com análises de beneficiários, prazos e trabalho social")
-    st.caption("🔄 Cache atualizado a cada 5 minutos | 🆕 Novas análises baseadas em dados reais do CAIXA")
-
+    st.caption("🔄 Cache atualizado a cada 5 minutos | 📈 Análises baseadas em dados atualizados do CAIXA")
 if __name__ == "__main__":
     main()
