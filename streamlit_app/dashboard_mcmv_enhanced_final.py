@@ -107,10 +107,8 @@ def login_form():
     st.info("""
     📋 **Instruções de Acesso:**
     - Use seu email corporativo (@tgvtec.com.br ou @digiteam.com.br)
-    - Senha: `caixamcmvpac`
-    - Entre em contato com Rangel@digiteam.com.br para suporte técnico
+    - Entre em contato com rangel@digiteam.com.br para suporte técnico
     """)
-
 def check_session_timeout():
     """Check if user session has expired (8 hours)"""
     if 'login_time' in st.session_state:
@@ -2722,16 +2720,6 @@ def main():
         </div>
         """, unsafe_allow_html=True)
 
-        # New features highlight
-        st.markdown("""
-        <div class="new-feature">
-            <strong>🆕 Novas Análises:</strong><br>
-            • Beneficiários (15.798)<br>
-            • Trabalho Social (59 projetos)<br>
-            • Análise de Prazos<br>
-            • Execução Financeira Detalhada
-        </div>
-        """, unsafe_allow_html=True)
 
         st.markdown(f"""
         <div style="font-size: 0.85rem; color: #666; text-align: center; margin-top: 0.5rem;">
