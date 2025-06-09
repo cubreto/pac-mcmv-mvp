@@ -1340,37 +1340,37 @@ def render_kpis():
     col1, col2, col3, col4, col5 = st.columns(5)
     
     with col1:
-        st.metric("Total Projetos MCMV", f"{int(summary['total_projetos']):,}")
+        st.metric("Total Projetos MCMV", f"{int(summary['total_projetos']):,}".replace(',', '.'))
     
     with col2:
         st.metric(
             "UH Esperadas",
-            f"{int(summary['uh_esperadas_total']):,}"
+            f"{int(summary['uh_esperadas_total']):,}".replace(',', '.')
         )
     
     with col3:
         st.metric(
             "UH Executadas",
-            f"{int(summary['uh_executadas_total']):,}",
-            delta=f"{summary['percentual_medio_nacional']:.1f}%"
+            f"{int(summary['uh_executadas_total']):,}".replace(',', '.'),
+            delta=f"{summary['percentual_medio_nacional']:.1f}".replace('.', ',') + "%"
         )
     
     with col4:
         st.metric(
             "Gap UH",
-            f"{int(summary['brecha_uh_nacional']):,}",
+            f"{int(summary['brecha_uh_nacional']):,}".replace(',', '.'),
             delta="Pendentes de entrega"
         )
     
     with col5:
         st.metric(
             "Investimento Total",
-            f"R$ {summary['investimento_total']/1e9:.2f} bi"
+            f"R$ {summary['investimento_total']/1e9:.2f}".replace('.', ',') + " bi"
         )
     
     # Neutral alert boxes
     if summary['projetos_alto_risco'] > 0:
-        st.info(f"📋 {int(summary['projetos_alto_risco'])} projetos requerem atenção especial")
+        st.info(f"📋 {int(summary['projetos_alto_risco']):,}".replace(',', '.') + " projetos requerem atenção especial")
 
 def calculate_dynamic_investment_estimate(df_map):
     """
