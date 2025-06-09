@@ -106,8 +106,7 @@ def login_form():
     
     st.info("""
     📋 **Instruções de Acesso:**
-    - Use seu email corporativo (@tgvtec.com.br ou @digiteam.com.br)
-    - Entre em contato com rangel@digiteam.com.br para suporte técnico
+    - Digite seu email e senha para acessar o dashboard
     """)
 def check_session_timeout():
     """Check if user session has expired (8 hours)"""
@@ -827,13 +826,13 @@ def render_beneficiarios_tab():
     with col2:
         st.info(f"""
         **Perfil dos Beneficiários:**
-        
-        🏠 {int(summary['total_mulheres']):,} mulheres chefes de família no programa
-        
-        📊 {summary['percentual_mulheres']:.1f}% dos beneficiários são mulheres
-        
-        💰 R$ {summary['valor_total_financiado']/1e6:.0f} milhões em financiamentos
-        
+
+        🏠 {f"{int(summary['total_mulheres']):,}".replace(',', '.')} mulheres chefes de família no programa
+
+        📊 {f"{summary['percentual_mulheres']:.1f}".replace('.', ',')}% dos beneficiários são mulheres
+
+        💰 R$ {f"{summary['valor_total_financiado']/1e6:,.0f}".replace(',', '.')} milhões em financiamentos
+
         📋 Conforme política de priorização habitacional
         """)
     
@@ -1321,9 +1320,10 @@ def render_kpis():
         st.markdown(f"""
         <div class="new-kpi-highlight">
             <h3>📊 Situação Identificada</h3>
-            <p><strong>{total_completed} projetos completados</strong> em todos os programas com R$ {total_investment:.1f} bilhões investidos</p>
-            <p><strong>Taxa de execução média de {summary.get('percentual_medio_nacional', 0):.1f}%</strong> nos programas MCMV</p>
-            <p><strong>{total_women:,} mulheres chefes de família</strong> cadastradas no programa</p>
+            <p><strong>{total_completed} projetos completados</strong> em todos os programas com R$ {f"{total_investment:.1f}".replace('.', ',')} bilhões investidos</p>
+            <p><strong>Taxa de execução média de {f"{summary.get('percentual_medio_nacional', 0):.1f}".replace('.', ',')}%</strong> nos programas MCMV</p>
+            <p><strong>{f"{int(total_women):,}".replace(',', '.')} mulheres chefes de família</strong> cadastradas no programa</p>
+
         </div>
         """, unsafe_allow_html=True)
         
@@ -2818,23 +2818,23 @@ def main():
             st.markdown(f"""
             **📊 Achados Relevantes:**
             - {total_completed} projetos completados
-            - {total_women:,} mulheres no programa
-            - Execução média {avg_execution:.1f}%
+            - {f"{int(total_women):,}".replace(',', '.')} mulheres no programa
+            - Execução média {f"{avg_execution:.1f}".replace('.', ',')}%
             """)
         
         with col2:
             st.markdown(f"""
             **📈 Novos Indicadores:**
-            - {total_beneficiaries:,} beneficiários cadastrados
+            - {f"{int(total_beneficiaries):,}".replace(',', '.')} beneficiários cadastrados
             - {ts_projects} projetos c/ trabalho social
-            - R$ {total_investment:.1f}B comprometidos
+            - R$ {f"{total_investment:.1f}".replace('.', ',')}B comprometidos
             """)
         
         with col3:
             st.markdown(f"""
             **⏱️ Status de Execução:**
-            - {total_projects_started:,} projetos iniciados ({pct_started:.1f}%)
-            - Progresso médio {avg_execution:.1f}%
+            - {f"{total_projects_started:,}".replace(',', '.')} projetos iniciados ({f"{pct_started:.1f}".replace('.', ',')}%)
+            - Progresso médio {f"{avg_execution:.1f}".replace('.', ',')}%
             - {ts_projects} com trabalho social ativo
             """)
     
