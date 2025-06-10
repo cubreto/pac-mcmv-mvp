@@ -1,0 +1,39 @@
+version: '3.8'
+services:
+  pac-db:
+    image: postgres:15-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: pac_database
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres123
+    volumes:
+      - pac_postgres_data:/var/lib/postgresql/data
+      - ./database/pac_init_complete.sql:/docker-entrypoint-initdb.d/01-pac-init.sql  # ← Use your proven schema
+    ports:
+      - "5434:5432"  # ← Keep separate from MCMV database (5432)
+      
+  streamlit-pac:
+    build:
+      context: .
+      dockerfile: Dockerfile.pac
+    container_name: pac-production  # ← New name to avoid conflicts
+    restart: unless-stopped
+    environment:
+      DB_HOST: pac-db
+      DB_PORT: 5432
+      DB_NAME: pac_database
+      DB_USER: postgres
+      DB_PASSWORD: postgres123
+    depends_on:
+      - pac-db
+    ports:
+      - "8501:8504"  # ← External port 8501, internal still 8504
+    volumes:
+      - ./data:/app/data:ro
+      - ./streamlit_app:/app/streamlit_app
+      - ./etl:/app/etl
+    command: streamlit run streamlit_app/pac_dashboard.py --server.port=8504 --server.address=0.0.0.0
+
+volumes:
+  pac_postgres_data:
