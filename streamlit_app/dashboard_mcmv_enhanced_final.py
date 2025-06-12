@@ -1004,7 +1004,6 @@ def load_financial_flow(selected_programs=None):
     WHERE {get_program_filter_clause(selected_programs)}
     GROUP BY uf, programa
     ORDER BY investimento_total DESC
-    LIMIT 20
     """
     return pd.read_sql(query, engine)
 
@@ -3170,7 +3169,7 @@ def main():
         
         ts_projects = len(social_work_summary) if not social_work_summary.empty else 0
         
-        # Quick insights footer
+        # Quick insights footerload_financial_flow
         col1, col2, col3 = st.columns(3)
         
         with col1:
