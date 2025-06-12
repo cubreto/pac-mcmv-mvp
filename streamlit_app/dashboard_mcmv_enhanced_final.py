@@ -58,31 +58,31 @@ USERS = {
     },
     # NEW v1.1 USERS - SHA-256 hashed passwords
     "anderson.brandao@cidades.gov.br": {
-        "password_hash": "b8c3e9fb7d7b3e8c2a4f1d6e9a5b2c7f4e8d1a6b9c5e2f7a3d8b1c4e6f9a2b5",  # hRIVerman
+        "password_hash": "41cf5ab73a0920201c1769b37351f731e677185bd20e5fb881b9f539070885dd",  # hRIVerman
         "name": "Anderson Brandão",
         "company": "Cidades",
         "role": "user"
     },
     "hugo.gomes@cidades.gov.br": {
-        "password_hash": "8f4e1b3d7a2c5e9f6b8d1a4c7e0f3b6d9a2c5e8f1b4d7a0c3e6f9b2d5a8c1e4",  # IALINIABl
+        "password_hash": "1d3157375b2802c49ebc854b537820f50fac8b792dfb3575e54c07e2eabd8281",  # IALINIABl
         "name": "Hugo Gomes",
         "company": "Cidades",
         "role": "user"
     },
     "joseane.couri@cidades.gov.br": {
-        "password_hash": "c7a0d3f6b9e2c5f8d1a4e7b0d3f6c9e2a5f8b1d4e7a0c3f6b9e2d5f8a1c4e7b0",  # OWSwERSTI
+        "password_hash": "545dc7e5a06823a6a6970e36052ed1ccf5d6a304846fef41de92deaa056dcd05",  # OWSwERSTI
         "name": "Joseane Couri",
         "company": "Cidades",
         "role": "user"
     },
     "rafael.moraes@cidades.gov.br": {
-        "password_hash": "e4b7d0a3f6c9e2b5f8d1a4c7e0b3d6f9a2c5e8b1d4a7c0e3f6b9d2e5f8a1c4b7",  # TFalInDL
+        "password_hash": "f2b5290585fd1d837819f11d7f08e51cdc6fd69cba322a985452165bd5f4e172",  # TFalInDL
         "name": "Rafael Moraes",
         "company": "Cidades",
         "role": "user"
     },
     "daniel.sigelmann@cidades.gov.br": {
-        "password_hash": "f9c2e5b8d1a4c7f0b3d6a9c2e5f8b1d4a7c0f3e6b9c2d5a8c1e4b7d0a3f6c9e2",  # ICTioMIne
+        "password_hash": "983634069e2c9dd5c80a38c4fa27e1766317d7fe52a10d2806ec7186dd9d8107",  # ICTioMIne
         "name": "Daniel Sigelmann",
         "company": "Cidades",
         "role": "user"
@@ -878,14 +878,19 @@ def load_uh_gap_by_state(selected_programs=None):
     
     engine = get_db_connection()
     query = f"""
-    SELECT uf, programa, 
+    SELECT 
+           CASE 
+               WHEN uf = 'JUNDIAÍ' THEN 'SP'
+               ELSE uf 
+           END as uf, 
+           programa, 
            COALESCE(SUM(uh_esperadas), 0) as uh_esperadas,
            COALESCE(SUM(uh_executadas), 0) as uh_executadas,
            COALESCE(SUM(brecha_uh), 0) as brecha_uh,
            COALESCE(AVG(percentual_medio), 0) as percentual_medio
     FROM mcmv_pj.vw_brecha_uh_por_uf
     WHERE {get_program_filter_clause(selected_programs)}
-    GROUP BY uf, programa
+    GROUP BY CASE WHEN uf = 'JUNDIAÍ' THEN 'SP' ELSE uf END, programa
     ORDER BY brecha_uh DESC
     """
     return pd.read_sql(query, engine)
@@ -902,7 +907,7 @@ def load_region_summary(selected_programs=None):
     region_cases = []
     for region, states in REGION_MAPPING.items():
         states_str = "','".join(states)
-        region_cases.append(f"WHEN uf IN ('{states_str}') THEN '{region}'")
+        region_cases.append(f"WHEN CASE WHEN uf = 'JUNDIAÍ' THEN 'SP' ELSE uf END IN ('{states_str}') THEN '{region}'")
     
     query = f"""
     SELECT 
@@ -1063,6 +1068,9 @@ def load_beneficiary_analytics(selected_programs=None):
     """Load beneficiary analytics by project, optionally filtered by programme list"""
     if selected_programs is None:
         selected_programs = AVAILABLE_PROGRAMS
+    
+    # Sort programs to ensure consistent cache key
+    selected_programs = sorted(selected_programs)
 
     engine = get_db_connection()
 
@@ -1903,8 +1911,17 @@ def render_beneficiarios_tab():
     # Top Projects by Beneficiaries
     if not analytics.empty:
         st.subheader("🏘️ Projetos com Mais Beneficiários")
-        top_projects = analytics.head(10)
-        fig = px.bar(top_projects, x='total_beneficiarios', y='nome_empreendimento',
+        top_projects = analytics.head(10).copy()
+        
+        # Fix empty project names - use NU_APF as fallback
+        import numpy as np
+        top_projects['display_name'] = np.where(
+            top_projects['nome_empreendimento'].fillna('').str.strip() != '',
+            top_projects['nome_empreendimento'],
+            'Projeto ' + top_projects['NU_APF'].astype(str)
+        )
+        
+        fig = px.bar(top_projects, x='total_beneficiarios', y='display_name',
                      orientation='h', title="Top 10 Projetos por Número de Beneficiários",
                      color='percentual_mulheres', color_continuous_scale='RdYlBu_r',
                      hover_data=['uf', 'programa'])
@@ -3118,9 +3135,9 @@ def main():
         selected_programs = st.session_state.get('selected_programs', AVAILABLE_PROGRAMS)
         
         national_summary = load_national_summary(selected_programs)
-        beneficiary_summary = load_beneficiary_summary(selected_programs)
-        timeline_summary = load_timeline_analysis(selected_programs)
-        social_work_summary = load_social_work(selected_programs)
+        beneficiary_summary = load_beneficiary_summary(selected_programs)  # ✅ FIXED: Added selected_programs
+        timeline_summary = load_timeline_analysis(selected_programs)       # ✅ FIXED: Added selected_programs
+        social_work_summary = load_social_work(selected_programs)          # ✅ FIXED: Added selected_programs
         program_summary = load_program_summary(selected_programs)
         
         # Calculate dynamic metrics with safe handling of None values
