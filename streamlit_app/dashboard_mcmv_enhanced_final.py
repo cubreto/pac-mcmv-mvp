@@ -86,7 +86,44 @@ USERS = {
         "name": "Daniel Sigelmann",
         "company": "Cidades",
         "role": "user"
-    }
+    },
+    # --- NEW CAIXA USERS (2025-06-12) ---
+    "ana.shneider@caixa.gov.br": {
+        "password_hash": "87d45cfbef5d64409af16d08d3280a008815abd83a4894749dd97efb381198fe",  # IgHcorYPte
+        "name": "Ana Shneider",
+        "company": "CAIXA",
+        "role": "user",
+    },
+    "fabio.m.barbosa@caixa.gov.br": {
+        "password_hash": "2c977797a37b58efa0cf5f87437e7ffe1cba4dd8f87580313447b4f739e4438e",  # CeIgRabLiP
+        "name": "Fábio M. Barbosa",
+        "company": "CAIXA",
+        "role": "user",
+    },
+    "luiz.afc.junior@caixa.gov.br": {
+        "password_hash": "2e539ad0e2987e7ee071e55380d8e0861426a2e77db84d88e29942f57ede8e2e",  # OeTaTorSer
+        "name": "Luiz A. F. C. Júnior",
+        "company": "CAIXA",
+        "role": "user",
+    },
+    "marcelo.o.lobo@caixa.gov.br": {
+        "password_hash": "4764f42c4bd90e9aa3a4242cd3433b3d731dd486ed570c2eaf4854bdb162a79d",  # IOnOmIUMiS
+        "name": "Marcelo O. Lobo",
+        "company": "CAIXA",
+        "role": "user",
+    },
+    "raimundo.a.moreira@caixa.gov.br": {
+        "password_hash": "cb8471e95eb506f154447bb4a9343bfaac3bd06974f80c5bed0164cf3468761f",  # vOldRocrED
+        "name": "Raimundo A. Moreira",
+        "company": "CAIXA",
+        "role": "user",
+    },
+    "vinicius.gama@caixa.gov.br": {
+        "password_hash": "6be2d2e748ad8c0d318ee34c2d0fd40daa3166f9d5bb81989724a8004aa94e4d",  # heNAGenDOs
+        "name": "Vinícius Gama",
+        "company": "CAIXA",
+        "role": "user",
+    },
 }
 
 def hash_password(password):
