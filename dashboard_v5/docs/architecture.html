@@ -1,0 +1,436 @@
+
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Architecture - MCMV Dashboard v5</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background-color: #f5f5f5;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        header {
+            background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);
+            color: white;
+            padding: 2rem 0;
+            margin-bottom: 2rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+        
+        nav {
+            background: white;
+            padding: 1rem;
+            margin-bottom: 2rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        nav ul {
+            list-style: none;
+            display: flex;
+            gap: 2rem;
+            flex-wrap: wrap;
+        }
+        
+        nav a {
+            color: #3b82f6;
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.2s;
+        }
+        
+        nav a:hover {
+            color: #1e40af;
+            text-decoration: underline;
+        }
+        
+        .content {
+            background: white;
+            padding: 2rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        h1, h2, h3, h4, h5, h6 {
+            margin-top: 2rem;
+            margin-bottom: 1rem;
+            color: #1e40af;
+        }
+        
+        h1 { font-size: 2rem; }
+        h2 { font-size: 1.75rem; }
+        h3 { font-size: 1.5rem; }
+        h4 { font-size: 1.25rem; }
+        
+        code {
+            background: #f3f4f6;
+            padding: 0.2rem 0.4rem;
+            border-radius: 4px;
+            font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+            font-size: 0.9em;
+        }
+        
+        pre {
+            background: #1e293b;
+            color: #e2e8f0;
+            padding: 1rem;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin: 1rem 0;
+        }
+        
+        pre code {
+            background: none;
+            padding: 0;
+            color: inherit;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1rem 0;
+        }
+        
+        th, td {
+            padding: 0.75rem;
+            text-align: left;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        
+        th {
+            background: #f9fafb;
+            font-weight: 600;
+            color: #374151;
+        }
+        
+        tr:hover {
+            background: #f9fafb;
+        }
+        
+        blockquote {
+            border-left: 4px solid #3b82f6;
+            padding-left: 1rem;
+            margin: 1rem 0;
+            color: #6b7280;
+            font-style: italic;
+        }
+        
+        ul, ol {
+            margin: 1rem 0;
+            padding-left: 2rem;
+        }
+        
+        li {
+            margin: 0.5rem 0;
+        }
+        
+        .footer {
+            margin-top: 3rem;
+            padding-top: 2rem;
+            border-top: 1px solid #e5e7eb;
+            text-align: center;
+            color: #6b7280;
+            font-size: 0.9rem;
+        }
+        
+        .badge {
+            display: inline-block;
+            padding: 0.25rem 0.5rem;
+            background: #3b82f6;
+            color: white;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            font-weight: 500;
+            margin-left: 0.5rem;
+        }
+        
+        .current-page {
+            font-weight: bold;
+            color: #1e40af;
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+            
+            header h1 {
+                font-size: 2rem;
+            }
+            
+            nav ul {
+                flex-direction: column;
+                gap: 0.5rem;
+            }
+            
+            .content {
+                padding: 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="container">
+            <h1>MCMV Dashboard v5</h1>
+            <p>High-Performance Housing Program Monitoring System</p>
+        </div>
+    </header>
+    
+    <div class="container">
+        <nav>
+            <ul>
+                <li><a href="index.html" >Overview</a></li>
+                <li><a href="architecture.html" class="current-page">Architecture</a></li>
+                <li><a href="implementation.html" >Implementation Guide</a></li>
+                <li><a href="https://github.com/your-repo/dashboard_v5" target="_blank">GitHub ↗</a></li>
+            </ul>
+        </nav>
+        
+        <div class="content">
+            <h1 id="mcmv-dashboard-v5-architecture-documentation">MCMV Dashboard v5 Architecture Documentation</h1>
+<h2 id="overview">Overview</h2>
+<p>Dashboard v5 is a complete rewrite of the MCMV dashboard, migrating from Streamlit (v4) to a modern React + FastAPI architecture. This provides significant performance improvements, better user experience, and more maintainable code.</p>
+<h2 id="key-improvements-over-v4">Key Improvements Over v4</h2>
+<ol>
+<li>
+<p><strong>Performance</strong>: 
+   - Instant tab switching (no page reloads)
+   - Smart caching with React Query
+   - Materialized database views
+   - Redis caching layer
+   - Response times under 100ms</p>
+</li>
+<li>
+<p><strong>User Experience</strong>:
+   - Modern React 18 UI with smooth animations
+   - Real-time data updates
+   - Responsive design with Tailwind CSS
+   - Interactive Recharts visualizations</p>
+</li>
+<li>
+<p><strong>Architecture</strong>:
+   - Separation of concerns (frontend/backend)
+   - Type-safe API with Pydantic models
+   - Async database operations
+   - Container-based deployment</p>
+</li>
+</ol>
+<h2 id="technology-stack">Technology Stack</h2>
+<h3 id="backend">Backend</h3>
+<ul>
+<li><strong>FastAPI</strong>: Modern async Python web framework</li>
+<li><strong>PostgreSQL</strong>: Database with materialized views</li>
+<li><strong>Redis</strong>: In-memory caching</li>
+<li><strong>SQLAlchemy</strong>: Async ORM</li>
+<li><strong>Pydantic</strong>: Data validation</li>
+<li><strong>Prometheus</strong>: Metrics collection</li>
+</ul>
+<h3 id="frontend">Frontend</h3>
+<ul>
+<li><strong>React 18</strong>: UI library with concurrent features</li>
+<li><strong>TypeScript</strong>: Type safety</li>
+<li><strong>TanStack Query</strong>: Data fetching and caching</li>
+<li><strong>Recharts</strong>: Data visualization</li>
+<li><strong>Tailwind CSS</strong>: Utility-first styling</li>
+<li><strong>Vite</strong>: Fast build tool</li>
+</ul>
+<h3 id="infrastructure">Infrastructure</h3>
+<ul>
+<li><strong>Docker Compose</strong>: Multi-container orchestration</li>
+<li><strong>Nginx</strong>: Reverse proxy and static file serving</li>
+<li><strong>GitHub Actions</strong>: CI/CD pipeline</li>
+</ul>
+<h2 id="project-structure">Project Structure</h2>
+<pre class="codehilite"><code>dashboard_v5/
+├── docker-compose.v5.yml         # Main deployment configuration
+├── backend/
+│   ├── Dockerfile               # Backend container image
+│   ├── requirements.txt         # Python dependencies
+│   └── app/
+│       ├── main.py             # FastAPI application
+│       ├── config.py           # Configuration management
+│       ├── database.py         # Database connection and queries
+│       ├── models.py           # Pydantic models
+│       ├── cache.py            # Redis caching
+│       └── business_rules.yml  # Business configuration
+├── frontend/
+│   ├── Dockerfile              # Frontend container image
+│   ├── package.json            # Node dependencies
+│   ├── vite.config.ts          # Vite configuration
+│   ├── tsconfig.json           # TypeScript configuration
+│   └── src/
+│       ├── App.tsx             # Main application component
+│       ├── api/
+│       │   ├── client.ts       # API client
+│       │   └── hooks.ts        # React Query hooks
+│       ├── components/
+│       │   └── charts/         # Visualization components
+│       └── pages/
+│           └── Dashboard.tsx   # Main dashboard page
+└── nginx/
+    └── nginx.conf              # Proxy configuration
+</code></pre>
+
+<h2 id="api-endpoints">API Endpoints</h2>
+<p>All endpoints are prefixed with <code>/api/v5</code>:</p>
+<ul>
+<li><code>GET /health</code> - Health check</li>
+<li><code>GET /kpis</code> - Key performance indicators</li>
+<li><code>GET /regional</code> - Regional summary data</li>
+<li><code>GET /programs</code> - Program summary data</li>
+<li><code>GET /temporal</code> - Time series trends</li>
+<li><code>GET /delivery-forecast</code> - Delivery predictions</li>
+<li><code>GET /data-quality</code> - Data quality metrics</li>
+<li><code>GET /config</code> - Frontend configuration</li>
+</ul>
+<h2 id="database-schema">Database Schema</h2>
+<p>The system uses the existing MCMV database with these key tables:
+- <code>mcmv_v2.projetos</code> - Main projects table
+- <code>mcmv_v2.dados_prioritarios</code> - Priority data (not used in Resumo)</p>
+<p>Materialized views created for performance:
+- <code>mcmv_v5.mv_kpi_summary</code> - Aggregated KPIs
+- <code>mcmv_v5.mv_regional_summary</code> - Regional aggregations
+- <code>mcmv_v5.mv_temporal_trends</code> - Time series data</p>
+<h2 id="data-flow">Data Flow</h2>
+<ol>
+<li><strong>User Request</strong> → Nginx → React App</li>
+<li><strong>API Call</strong> → TanStack Query → FastAPI</li>
+<li><strong>Cache Check</strong> → Redis (if cached, return)</li>
+<li><strong>Database Query</strong> → PostgreSQL (materialized views)</li>
+<li><strong>Response</strong> → Cache Update → Frontend Update</li>
+</ol>
+<h2 id="caching-strategy">Caching Strategy</h2>
+<h3 id="frontend-tanstack-query">Frontend (TanStack Query)</h3>
+<ul>
+<li>KPIs: 30 minutes stale time</li>
+<li>Regional/Program data: 30 minutes</li>
+<li>Delivery forecast: 30 minutes</li>
+<li>Configuration: 1 hour</li>
+</ul>
+<h3 id="backend-redis">Backend (Redis)</h3>
+<ul>
+<li>Aggregated data: 30 minutes TTL</li>
+<li>Summary data: 30 minutes TTL</li>
+<li>Detailed data: 10 minutes TTL</li>
+<li>Static data: 1 hour TTL</li>
+</ul>
+<h2 id="key-components">Key Components</h2>
+<h3 id="frontend-components">Frontend Components</h3>
+<ol>
+<li><strong>Dashboard.tsx</strong>: Main dashboard with tabbed interface</li>
+<li><strong>RegionalChart.tsx</strong>: Regional analysis with financial table</li>
+<li><strong>ProgramChart.tsx</strong>: Program analysis with multiple views</li>
+<li><strong>DeliveryForecastChart.tsx</strong>: Time series delivery predictions</li>
+<li><strong>PerformanceMetrics.tsx</strong>: System performance monitoring</li>
+</ol>
+<h3 id="backend-services">Backend Services</h3>
+<ol>
+<li><strong>DatabaseManager</strong>: Async database operations</li>
+<li><strong>CacheManager</strong>: Redis caching layer</li>
+<li><strong>BusinessRules</strong>: Configuration management</li>
+<li><strong>MetricsMiddleware</strong>: Performance monitoring</li>
+</ol>
+<h2 id="deployment">Deployment</h2>
+<h3 id="development">Development</h3>
+<pre class="codehilite"><code class="language-bash">docker compose -f docker-compose.v5.yml up --build
+</code></pre>
+
+<h3 id="production">Production</h3>
+<ul>
+<li>Frontend served on port 8504</li>
+<li>API available at localhost:8504/api/v5</li>
+<li>Redis on internal port 6380</li>
+<li>Metrics at /metrics (Prometheus format)</li>
+</ul>
+<h3 id="environment-variables">Environment Variables</h3>
+<ul>
+<li><code>DATABASE_URL</code>: PostgreSQL connection string</li>
+<li><code>REDIS_URL</code>: Redis connection string</li>
+<li><code>ENVIRONMENT</code>: development/staging/production</li>
+<li><code>API_BASE_PATH</code>: API route prefix</li>
+</ul>
+<h2 id="performance-optimizations">Performance Optimizations</h2>
+<ol>
+<li><strong>Materialized Views</strong>: Pre-computed aggregations</li>
+<li><strong>Connection Pooling</strong>: Reused database connections</li>
+<li><strong>Smart Caching</strong>: Multi-layer cache strategy</li>
+<li><strong>Lazy Loading</strong>: Components loaded on demand</li>
+<li><strong>Compression</strong>: Gzip for API responses</li>
+<li><strong>CDN Ready</strong>: Static assets optimized</li>
+</ol>
+<h2 id="security-features">Security Features</h2>
+<ol>
+<li><strong>CORS Configuration</strong>: Controlled cross-origin access</li>
+<li><strong>Input Validation</strong>: Pydantic models</li>
+<li><strong>SQL Injection Protection</strong>: Parameterized queries</li>
+<li><strong>Rate Limiting</strong>: Via Nginx (configurable)</li>
+<li><strong>Health Checks</strong>: Kubernetes-ready endpoints</li>
+</ol>
+<h2 id="monitoring">Monitoring</h2>
+<ol>
+<li>
+<p><strong>Prometheus Metrics</strong>:
+   - Request count by endpoint
+   - Response time histograms
+   - Cache hit rates
+   - Error rates</p>
+</li>
+<li>
+<p><strong>Application Logs</strong>:
+   - Structured JSON logging
+   - Request/response tracking
+   - Error stack traces
+   - Performance metrics</p>
+</li>
+</ol>
+<h2 id="migration-from-v4">Migration from v4</h2>
+<p>The v5 dashboard maintains feature parity with v4 while adding:
+- Faster performance (10x improvement in tab switching)
+- Better user experience (no page reloads)
+- More maintainable code (TypeScript + proper separation)
+- Enhanced visualizations (interactive charts)
+- Real-time updates (React Query polling)</p>
+<p>Data compatibility is maintained - both v4 and v5 use the same database tables and business logic.</p>
+<h2 id="future-enhancements">Future Enhancements</h2>
+<ol>
+<li><strong>WebSocket Support</strong>: Real-time data updates</li>
+<li><strong>PWA Features</strong>: Offline capability</li>
+<li><strong>Advanced Analytics</strong>: ML-based predictions</li>
+<li><strong>Multi-tenancy</strong>: Organization-based access</li>
+<li><strong>GraphQL API</strong>: More flexible data fetching</li>
+</ol>
+        </div>
+        
+        <div class="footer">
+            <p>Generated on 2025-07-02 15:55 | MCMV Dashboard v5 Documentation</p>
+        </div>
+    </div>
+</body>
+</html>

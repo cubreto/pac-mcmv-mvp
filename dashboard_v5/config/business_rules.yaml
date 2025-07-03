@@ -1,0 +1,267 @@
+# ================================================
+# MCMV Dashboard v5 - Business Rules Configuration
+# Single source of truth for all business logic
+# ================================================
+
+# PROGRAM DEFINITIONS
+programs:
+  RURAL:
+    name: "Programa Nacional de Habitação Rural"
+    description: "Público-alvo: Famílias rurais e agricultura familiar"
+    execution_model: "Entidades Organizadoras"
+    accent_color: "#009688"
+    icon: "🌾"
+    status_logic: "progress_based"
+    risk_threshold_years: 3
+    views:
+      - name: "regional"
+        title: "Por Região"
+        icon: "🌎"
+        charts: ["status_stacked_bar", "execution_progress_bar"]
+      - name: "situacao"
+        title: "Situação"
+        icon: "📊"
+        charts: ["horizontal_bar", "metrics_summary"]
+      - name: "beneficiarios"
+        title: "Beneficiários"
+        icon: "👥"
+        charts: ["gender_pie", "typology_horizontal_bar"]
+    
+  FAR:
+    name: "Fundo de Arrendamento Residencial"
+    description: "Público-alvo: Famílias com renda até R$ 2.640"
+    execution_model: "Construtoras e Incorporadoras"
+    accent_color: "#FF9F0A"
+    icon: "🏗️"
+    status_logic: "progress_based"
+    risk_threshold_years: 2
+    views:
+      - name: "regional"
+        title: "Por Região"
+        icon: "🌎"
+        charts: ["status_stacked_bar", "execution_progress_bar"]
+      - name: "situacao"
+        title: "Situação"
+        icon: "📊"
+        charts: ["horizontal_bar", "metrics_summary"]
+    
+  FDS:
+    name: "Fundo de Desenvolvimento Social"
+    description: "Público-alvo: Famílias com renda até R$ 1.800"
+    execution_model: "Movimentos Sociais e Cooperativas"
+    accent_color: "#9733FF"
+    icon: "🏘️"
+    status_logic: "progress_based"
+    risk_threshold_years: 2
+    views:
+      - name: "regional"
+        title: "Por Região"
+        icon: "🌎"
+        charts: ["status_stacked_bar", "execution_progress_bar"]
+      - name: "situacao"
+        title: "Situação"
+        icon: "📊"
+        charts: ["horizontal_bar", "metrics_summary"]
+
+# STATUS DEFINITIONS
+status_definitions:
+  nao_iniciada:
+    label: "Não Iniciada"
+    description: "Projetos sem execução física iniciada"
+    color: "#E53935"
+    logic: "pc_obra_realizada = 0"
+    priority: 1
+    
+  em_execucao:
+    label: "Em Execução"
+    description: "Projetos com execução física em andamento"
+    color: "#1AA45B"
+    logic: "pc_obra_realizada BETWEEN 1 AND 99"
+    priority: 2
+    
+  concluida:
+    label: "Concluída"
+    description: "Projetos com execução física finalizada"
+    color: "#3DB4FF"
+    logic: "pc_obra_realizada = 100"
+    priority: 3
+    
+  indefinida:
+    label: "Indefinida"
+    description: "Projetos com status não determinado"
+    color: "#9E9E9E"
+    logic: "pc_obra_realizada IS NULL"
+    priority: 4
+
+# RISK CLASSIFICATIONS
+risk_levels:
+  baixo_risco:
+    label: "Baixo Risco"
+    color: "#4CAF50"
+    description: "Projetos em execução normal"
+    
+  medio_risco:
+    label: "Médio Risco"
+    color: "#FF9800"
+    description: "Projetos que requerem atenção"
+    
+  alto_risco:
+    label: "Alto Risco"
+    color: "#F44336"
+    description: "Projetos com atraso significativo"
+
+# KPI DEFINITIONS
+kpis:
+  # CORE METRICS
+  total_projetos:
+    label: "Total Projetos"
+    description: "Número total de projetos contratados"
+    format: "number"
+    aggregation: "count"
+    priority: 1
+    
+  total_uh:
+    label: "Total UH"
+    description: "Unidades habitacionais contratadas"
+    format: "number"
+    aggregation: "sum"
+    field: "uh_contratadas"
+    priority: 2
+    
+  total_investimento:
+    label: "Total Investimento"
+    description: "Valor total de investimento"
+    format: "currency"
+    aggregation: "sum"
+    field: "vr_total_investimento"
+    priority: 3
+    
+  investimento_por_uh:
+    label: "Investimento/UH"
+    description: "Investimento médio por unidade habitacional"
+    format: "currency"
+    aggregation: "avg"
+    calculation: "vr_total_investimento / uh_contratadas"
+    priority: 4
+    
+  percentual_execucao:
+    label: "% Execução"
+    description: "Percentual médio de execução física"
+    format: "percentage"
+    aggregation: "avg"
+    field: "pc_obra_realizada"
+    priority: 5
+
+# REGIONAL DEFINITIONS
+regions:
+  Norte:
+    states: ["AC", "AP", "AM", "PA", "RO", "RR", "TO"]
+    color: "#4CAF50"
+    
+  Nordeste:
+    states: ["AL", "BA", "CE", "MA", "PB", "PE", "PI", "RN", "SE"]
+    color: "#FF9800"
+    
+  Centro-Oeste:
+    states: ["DF", "GO", "MT", "MS"]
+    color: "#9C27B0"
+    
+  Sudeste:
+    states: ["ES", "MG", "RJ", "SP"]
+    color: "#2196F3"
+    
+  Sul:
+    states: ["PR", "RS", "SC"]
+    color: "#FF5722"
+
+# CHART CONFIGURATIONS
+charts:
+  status_stacked_bar:
+    type: "stacked_bar"
+    title: "UH por {dimension} e Status"
+    x_axis: "{dimension}"
+    y_axis: "uh_contratadas"
+    stack_by: "status_canonico"
+    colors: "status_colors"
+    
+  execution_progress_bar:
+    type: "bar"
+    title: "% Execução por {dimension}"
+    x_axis: "{dimension}"
+    y_axis: "percentual_execucao_medio"
+    color: "#3DB4FF"
+    
+  horizontal_bar:
+    type: "horizontal_bar"
+    title: "UH por Situação"
+    x_axis: "uh_contratadas"
+    y_axis: "status_canonico"
+    color_by: "projetos"
+    
+  gender_pie:
+    type: "pie"
+    title: "Beneficiários por Gênero"
+    values: "beneficiarios"
+    names: "genero"
+    hole: 0.3
+    colors: ["#E91E63", "#64B5F6"]
+
+# PERFORMANCE SETTINGS
+performance:
+  cache_ttl:
+    static_data: 3600      # 1 hour - regions, programs
+    aggregated_data: 1800  # 30 minutes - KPIs, summaries
+    detailed_data: 600     # 10 minutes - charts, tables
+    user_data: 300         # 5 minutes - session-specific
+    
+  database:
+    materialized_view_refresh_interval: 1800  # 30 minutes
+    query_timeout: 30000                      # 30 seconds
+    connection_pool_size: 15
+    connection_pool_overflow: 25
+    
+  frontend:
+    api_timeout: 10000     # 10 seconds
+    chart_animation: true
+    skeleton_loading: true
+    progressive_loading: true
+
+# DATA QUALITY THRESHOLDS
+data_quality:
+  minimum_score: 85.0
+  critical_missing_fields: ["dt_contratacao", "uh_contratadas", "vr_total_investimento"]
+  validation_rules:
+    - field: "pc_obra_realizada"
+      rule: "BETWEEN 0 AND 100"
+      severity: "error"
+    - field: "uh_contratadas"
+      rule: "> 0"
+      severity: "error"
+    - field: "dt_inicio_obra"
+      rule: ">= dt_contratacao"
+      severity: "warning"
+
+# API CONFIGURATION
+api:
+  version: "v5"
+  base_path: "/api/v5"
+  cors_origins: ["http://localhost:3000", "http://localhost:8503"]
+  rate_limiting:
+    requests_per_minute: 300
+    burst_size: 50
+  
+  endpoints:
+    kpis: "/kpis"
+    regional: "/regional"
+    temporal: "/temporal"
+    data_quality: "/data-quality"
+    export: "/export"
+
+# EXPORT CONFIGURATIONS
+export:
+  formats: ["pdf", "excel", "csv", "json"]
+  max_records: 10000
+  include_metadata: true
+  templates:
+    executive_summary: "templates/executive_summary.html"
+    detailed_report: "templates/detailed_report.html"

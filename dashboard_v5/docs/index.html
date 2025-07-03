@@ -1,0 +1,341 @@
+
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Overview - MCMV Dashboard v5</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background-color: #f5f5f5;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        header {
+            background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);
+            color: white;
+            padding: 2rem 0;
+            margin-bottom: 2rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+        
+        nav {
+            background: white;
+            padding: 1rem;
+            margin-bottom: 2rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        nav ul {
+            list-style: none;
+            display: flex;
+            gap: 2rem;
+            flex-wrap: wrap;
+        }
+        
+        nav a {
+            color: #3b82f6;
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.2s;
+        }
+        
+        nav a:hover {
+            color: #1e40af;
+            text-decoration: underline;
+        }
+        
+        .content {
+            background: white;
+            padding: 2rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        h1, h2, h3, h4, h5, h6 {
+            margin-top: 2rem;
+            margin-bottom: 1rem;
+            color: #1e40af;
+        }
+        
+        h1 { font-size: 2rem; }
+        h2 { font-size: 1.75rem; }
+        h3 { font-size: 1.5rem; }
+        h4 { font-size: 1.25rem; }
+        
+        code {
+            background: #f3f4f6;
+            padding: 0.2rem 0.4rem;
+            border-radius: 4px;
+            font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+            font-size: 0.9em;
+        }
+        
+        pre {
+            background: #1e293b;
+            color: #e2e8f0;
+            padding: 1rem;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin: 1rem 0;
+        }
+        
+        pre code {
+            background: none;
+            padding: 0;
+            color: inherit;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1rem 0;
+        }
+        
+        th, td {
+            padding: 0.75rem;
+            text-align: left;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        
+        th {
+            background: #f9fafb;
+            font-weight: 600;
+            color: #374151;
+        }
+        
+        tr:hover {
+            background: #f9fafb;
+        }
+        
+        blockquote {
+            border-left: 4px solid #3b82f6;
+            padding-left: 1rem;
+            margin: 1rem 0;
+            color: #6b7280;
+            font-style: italic;
+        }
+        
+        ul, ol {
+            margin: 1rem 0;
+            padding-left: 2rem;
+        }
+        
+        li {
+            margin: 0.5rem 0;
+        }
+        
+        .footer {
+            margin-top: 3rem;
+            padding-top: 2rem;
+            border-top: 1px solid #e5e7eb;
+            text-align: center;
+            color: #6b7280;
+            font-size: 0.9rem;
+        }
+        
+        .badge {
+            display: inline-block;
+            padding: 0.25rem 0.5rem;
+            background: #3b82f6;
+            color: white;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            font-weight: 500;
+            margin-left: 0.5rem;
+        }
+        
+        .current-page {
+            font-weight: bold;
+            color: #1e40af;
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+            
+            header h1 {
+                font-size: 2rem;
+            }
+            
+            nav ul {
+                flex-direction: column;
+                gap: 0.5rem;
+            }
+            
+            .content {
+                padding: 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="container">
+            <h1>MCMV Dashboard v5</h1>
+            <p>High-Performance Housing Program Monitoring System</p>
+        </div>
+    </header>
+    
+    <div class="container">
+        <nav>
+            <ul>
+                <li><a href="index.html" class="current-page">Overview</a></li>
+                <li><a href="architecture.html" >Architecture</a></li>
+                <li><a href="implementation.html" >Implementation Guide</a></li>
+                <li><a href="https://github.com/your-repo/dashboard_v5" target="_blank">GitHub ↗</a></li>
+            </ul>
+        </nav>
+        
+        <div class="content">
+            <h1 id="mcmv-dashboard-v5">MCMV Dashboard v5</h1>
+<p>A high-performance dashboard for monitoring MCMV (Minha Casa Minha Vida) housing programs, built with React and FastAPI.</p>
+<h2 id="quick-start">Quick Start</h2>
+<pre class="codehilite"><code class="language-bash"># Start all services
+docker compose -f docker-compose.v5.yml up --build
+
+# Access dashboard
+http://localhost:8504
+</code></pre>
+
+<h2 id="features">Features</h2>
+<ul>
+<li><strong>Real-time KPIs</strong>: Monitor 1,566 projects and 155,477 housing units</li>
+<li><strong>Regional Analysis</strong>: Interactive maps and financial breakdowns by region</li>
+<li><strong>Program Tracking</strong>: Detailed views for FAR, FDS, and RURAL programs</li>
+<li><strong>Delivery Forecasts</strong>: AI-powered predictions for project completion</li>
+<li><strong>Performance Monitoring</strong>: Built-in metrics and health checks</li>
+</ul>
+<h2 id="architecture">Architecture</h2>
+<ul>
+<li><strong>Frontend</strong>: React 18 + TypeScript + TanStack Query + Recharts</li>
+<li><strong>Backend</strong>: FastAPI + PostgreSQL + Redis + SQLAlchemy</li>
+<li><strong>Infrastructure</strong>: Docker Compose + Nginx + Prometheus</li>
+</ul>
+<h2 id="documentation">Documentation</h2>
+<ul>
+<li><a href="./ARCHITECTURE.md">Architecture Overview</a> - System design and components</li>
+<li><a href="./IMPLEMENTATION_GUIDE.md">Implementation Guide</a> - Step-by-step development process</li>
+<li><a href="http://localhost:8504/docs">API Documentation</a> - Interactive API docs (dev only)</li>
+</ul>
+<h2 id="key-improvements-over-v4">Key Improvements Over v4</h2>
+<table>
+<thead>
+<tr>
+<th>Feature</th>
+<th>v4 (Streamlit)</th>
+<th>v5 (React + FastAPI)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Tab Switching</td>
+<td>3-5 seconds</td>
+<td>Instant</td>
+</tr>
+<tr>
+<td>Page Reloads</td>
+<td>Yes</td>
+<td>No</td>
+</tr>
+<tr>
+<td>Caching</td>
+<td>Basic</td>
+<td>Multi-layer</td>
+</tr>
+<tr>
+<td>Type Safety</td>
+<td>No</td>
+<td>Full TypeScript</td>
+</tr>
+<tr>
+<td>API Response</td>
+<td>500ms+</td>
+<td>&lt;100ms</td>
+</tr>
+<tr>
+<td>Mobile Support</td>
+<td>Limited</td>
+<td>Fully Responsive</td>
+</tr>
+</tbody>
+</table>
+<h2 id="project-structure">Project Structure</h2>
+<pre class="codehilite"><code>dashboard_v5/
+├── backend/          # FastAPI application
+├── frontend/         # React application
+├── nginx/           # Proxy configuration
+├── docker-compose.v5.yml
+└── docs/            # Documentation
+</code></pre>
+
+<h2 id="development">Development</h2>
+<h3 id="backend">Backend</h3>
+<pre class="codehilite"><code class="language-bash">cd backend
+pip install -r requirements.txt
+uvicorn app.main:app --reload
+</code></pre>
+
+<h3 id="frontend">Frontend</h3>
+<pre class="codehilite"><code class="language-bash">cd frontend
+npm install
+npm run dev
+</code></pre>
+
+<h3 id="database">Database</h3>
+<p>The dashboard connects to the existing PostgreSQL database with mcmv_v2 schema.</p>
+<h2 id="environment-variables">Environment Variables</h2>
+<p>Create a <code>.env</code> file:</p>
+<pre class="codehilite"><code class="language-env">DATABASE_URL=postgresql://dashboard_user:securepassword@mcmv-db:5432/mcmv_dashboard
+REDIS_URL=redis://mcmv-v5-redis:6379/0
+ENVIRONMENT=development
+</code></pre>
+
+<h2 id="monitoring">Monitoring</h2>
+<ul>
+<li>Health Check: http://localhost:8504/api/v5/health</li>
+<li>Metrics: http://localhost:8504/metrics (Prometheus format)</li>
+</ul>
+<h2 id="contributing">Contributing</h2>
+<ol>
+<li>Follow the existing code style</li>
+<li>Add tests for new features</li>
+<li>Update documentation</li>
+<li>Submit PR with clear description</li>
+</ol>
+<h2 id="license">License</h2>
+<p>Private - MCMV Dashboard Project</p>
+        </div>
+        
+        <div class="footer">
+            <p>Generated on 2025-07-02 15:55 | MCMV Dashboard v5 Documentation</p>
+        </div>
+    </div>
+</body>
+</html>

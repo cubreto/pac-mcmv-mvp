@@ -1,0 +1,114 @@
+# MCMV Dashboard v5 - Side-by-side with v4
+# Connects to existing database, runs on port 8504
+
+version: '3.8'
+
+services:
+  # FastAPI Backend for v5
+  mcmv-v5-api:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: mcmv-v5-api
+    ports:
+      - "8001:8000"  # Internal FastAPI on 8001
+    environment:
+      - ENVIRONMENT=production
+      - DB_HOST=pac-mcmv-mvp-db-1  # Connect to existing database
+      - DB_PORT=5432
+      - DB_NAME=pac_mcmv
+      - DB_USER=postgres
+      - DB_PASSWORD=postgres123
+      - REDIS_HOST=mcmv-v5-redis
+      - REDIS_PORT=6379
+      - API_DEBUG=false
+      - LOG_LEVEL=INFO
+      - SECRET_KEY=mcmv-v5-production-secret
+    volumes:
+      - /home/ec2-user/pac-mcmv-mvp/dashboard_v5/config:/config:ro
+      - ./logs:/app/logs
+    networks:
+      - mcmv-v5-network
+      - pac-mcmv-mvp_default  # Connect to existing network for database access
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8000/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    depends_on:
+      - mcmv-v5-redis
+
+  # React Frontend for v5
+  mcmv-v5-frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        - VITE_API_BASE_URL=/api/v5
+    container_name: mcmv-v5-frontend
+    ports:
+      - "8504:80"  # v5 Dashboard on port 8504
+    volumes:
+      - ./docs:/usr/share/nginx/docs:ro
+    environment:
+      - NODE_ENV=production
+    networks:
+      - mcmv-v5-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:80 || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    depends_on:
+      - mcmv-v5-api
+
+  # Redis for v5 (separate from v4)
+  mcmv-v5-redis:
+    image: redis:7-alpine
+    container_name: mcmv-v5-redis
+    ports:
+      - "6380:6379"  # Different port to avoid conflicts
+    command: redis-server --maxmemory 512mb --maxmemory-policy allkeys-lru --appendonly yes
+    volumes:
+      - mcmv_v5_redis_data:/data
+    networks:
+      - mcmv-v5-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Nginx proxy for v5 (optional - direct access for now)
+  mcmv-v5-proxy:
+    image: nginx:alpine
+    container_name: mcmv-v5-proxy
+    ports:
+      - "8505:80"  # Optional proxy endpoint
+    volumes:
+      - ./nginx/v5.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - mcmv-v5-api
+      - mcmv-v5-frontend
+    networks:
+      - mcmv-v5-network
+    restart: unless-stopped
+
+volumes:
+  mcmv_v5_redis_data:
+    driver: local
+
+networks:
+  mcmv-v5-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.26.0.0/16
+  
+  # Connect to existing v4 network for database access
+  pac-mcmv-mvp_default:
+    external: true
