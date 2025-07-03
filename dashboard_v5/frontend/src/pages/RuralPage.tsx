@@ -11,6 +11,14 @@ import { useMemo } from 'react'
 // Importing hooks to recreate our working test component
 import { useRuralRegionStatusChart } from '../api/hooks'
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, Legend } from 'recharts'
+// Import Timeline chart - DISABLED: causes infinite re-render loops
+// import { RuralTimelineChart } from '../components/charts/RuralCharts'
+// Import new stable status chart
+import StatusDistributionChart from '../components/charts/StatusDistributionChart'
+// Import new stable timeline chart
+import TimelineChart from '../components/charts/TimelineChart'
+// Import new stable financial table
+import FinancialTable from '../components/charts/FinancialTable'
 
 // STATUS_COLORS from original component
 const STATUS_COLORS = [
@@ -66,7 +74,7 @@ export default function RuralPage() {
           {/* KPI Cards */}
           <div>
             <h2 className="text-xl font-semibold text-gray-900 mb-4">
-              🧱 Indicadores RURAL
+              🏢 Indicadores RURAL
             </h2>
             
             {kpisLoading ? (
@@ -76,36 +84,41 @@ export default function RuralPage() {
                 <p className="text-red-800">❌ Error loading KPIs</p>
               </div>
             ) : kpis ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
                 <KPICard
-                  title="Total UH"
-                  value={kpis.total_uh_contratadas?.toLocaleString('pt-BR') || '0'}
-                  subtitle="Unidades Habitacionais"
+                  title="Total Projetos"
+                  value={kpis.total_projetos?.toLocaleString('pt-BR') || '0'}
+                  subtitle="Projetos RURAL"
                   color="blue"
                 />
                 <KPICard
-                  title="Investimento"
-                  value={kpis.total_investimento ? `R$ ${(kpis.total_investimento / 1000000).toFixed(1)}M` : 'R$ 0'}
-                  subtitle="Valor Total"
+                  title="UH Contratadas"
+                  value={kpis.total_uh_contratadas?.toLocaleString('pt-BR') || '0'}
+                  subtitle="Unidades Habitacionais"
                   color="green"
                 />
                 <KPICard
-                  title="Concluídas"
-                  value={kpis.uh_concluidas?.toLocaleString('pt-BR') || '0'}
-                  subtitle="UH Entregues"
+                  title="Valor Contratado"
+                  value={kpis.total_contratado ? `R$ ${(kpis.total_contratado / 1000000000).toFixed(1)}B` : 'R$ 0'}
+                  subtitle="Valor contratado"
                   color="purple"
                 />
                 <KPICard
-                  title="Em Andamento"
-                  value={kpis.uh_em_execucao?.toLocaleString('pt-BR') || '0'}
-                  subtitle="UH Em Execução"
+                  title="Valor Investido"
+                  value={kpis.total_investimento ? `R$ ${(kpis.total_investimento / 1000000000).toFixed(1)}B` : 'R$ 0'}
+                  subtitle="Total investido"
                   color="orange"
+                />
+                <KPICard
+                  title="Investimento/UH"
+                  value={kpis.investimento_medio_por_uh ? `R$ ${kpis.investimento_medio_por_uh.toLocaleString('pt-BR')}` : 'R$ 0'}
+                  subtitle="Média por unidade"
+                  color="teal"
                 />
               </div>
             ) : (
               <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-                <p className="text-gray-600">📊 KPI Cards v0.6 - Data fetching enabled</p>
-                <p className="text-sm text-gray-500 mt-1">Active filters: {JSON.stringify(chartFilters)}</p>
+                <p className="text-gray-600">Nenhum dado de KPI disponível</p>
               </div>
             )}
           </div>
@@ -128,35 +141,29 @@ export default function RuralPage() {
             )}
           </div>
 
-          {/* All other charts disabled */}
+          {/* Status Distribution Chart */}
           <div className="bg-white rounded-lg shadow p-6">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">
-              📊 Other Charts
+              📊 Distribuição por Status
             </h3>
-            <div className="h-64 flex items-center justify-center bg-gray-50 rounded-lg">
-              <p className="text-gray-500">Charts temporarily disabled for debugging</p>
-            </div>
+            <StatusDistributionChart filters={chartFilters} />
           </div>
         </div>
 
-        {/* Timeline Chart - DISABLED */}
+        {/* Timeline Chart */}
         <div className="bg-white rounded-lg shadow p-6">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">
             📈 Timeline - Previsão de Entrega
           </h3>
-          <div className="h-64 flex items-center justify-center bg-gray-50 rounded-lg">
-            <p className="text-gray-500">Chart temporarily disabled for debugging</p>
-          </div>
+          <TimelineChart filters={chartFilters} />
         </div>
 
-        {/* Financial Table - DISABLED */}
+        {/* Financial Table */}
         <div className="bg-white rounded-lg shadow p-6">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">
-            📋 Financial Table
+            📋 Resumo Financeiro
           </h3>
-          <div className="h-64 flex items-center justify-center bg-gray-50 rounded-lg">
-            <p className="text-gray-500">Table temporarily disabled for debugging</p>
-          </div>
+          <FinancialTable filters={chartFilters} />
         </div>
       </div>
       </div>
@@ -206,7 +213,6 @@ function WorkingChart({ data }: { data: any }) {
 
   return (
     <div className="h-64">
-      <h4 className="font-semibold mb-2 px-4">📊 Working Chart v3.0-RESTORE</h4>
       <ResponsiveContainer width="100%" height="80%">
         <BarChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />

@@ -37,7 +37,7 @@ export default function GlobalFilters() {
             🔍 Filtros Avançados
           </h3>
           <p className="text-sm text-gray-600 mt-1">
-            Use os filtros em cascata para refinar sua análise em todas as abas <span className="text-blue-600 font-medium">FINAL-FIX</span>
+            Use os filtros em cascata para refinar sua análise em todas as abas
           </p>
         </div>
         
