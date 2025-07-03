@@ -32,17 +32,22 @@ export function ErrorFallback({ error, resetErrorBoundary }: ErrorFallbackProps)
             Ocorreu um erro inesperado no dashboard. Tente recarregar a página ou entre em contato com o suporte.
           </p>
           
-          {(import.meta as any).env.DEV && (
-            <details className="mt-4">
-              <summary className="text-sm text-gray-500 cursor-pointer">
-                Detalhes técnicos (desenvolvimento)
-              </summary>
-              <pre className="mt-2 text-xs text-red-600 bg-red-50 p-2 rounded overflow-auto">
-                {error.message}
-                {error.stack}
-              </pre>
-            </details>
-          )}
+          <details className="mt-4">
+            <summary className="text-sm text-gray-500 cursor-pointer">
+              Detalhes técnicos do erro
+            </summary>
+            <pre className="mt-2 text-xs text-red-600 bg-red-50 p-2 rounded overflow-auto">
+              <strong>Error:</strong> {error.message}
+              {error.stack && (
+                <>
+                  <br /><br />
+                  <strong>Stack Trace:</strong>
+                  <br />
+                  {error.stack}
+                </>
+              )}
+            </pre>
+          </details>
         </div>
         
         <div className="flex space-x-3">

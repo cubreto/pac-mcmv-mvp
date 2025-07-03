@@ -6,6 +6,7 @@
 import { useKPIs } from '../api/hooks'
 import { KPISkeleton } from '../components/LoadingSpinner'
 import { useGlobalFilters } from '../contexts/FilterContext'
+import { ProgramErrorBoundary } from '../components/ProgramErrorBoundary'
 import { 
   FDSRegionChart,
   FDSStatusChart,
@@ -26,7 +27,8 @@ export default function FDSPage() {
   })
 
   return (
-    <div className="space-y-8">
+    <ProgramErrorBoundary programName="FDS">
+      <div className="space-y-8">
       {/* Header */}
       <div className="bg-gradient-to-r from-purple-600 to-purple-800 rounded-lg shadow-lg p-8 text-white">
         <h1 className="text-3xl font-bold mb-2">
@@ -145,7 +147,8 @@ export default function FDSPage() {
         {/* Financial Table */}
         <FDSFinancialTable filters={filters} />
       </div>
-    </div>
+      </div>
+    </ProgramErrorBoundary>
   )
 }
 

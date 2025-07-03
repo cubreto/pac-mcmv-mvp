@@ -66,7 +66,7 @@ export function useProgramSummary(
   options?: UseQueryOptions<RegionalSummary>
 ) {
   return useQuery({
-    queryKey: ['mcmv', 'programs', filters],
+    queryKey: ['mcmv', 'program-summary', filters],
     queryFn: () => apiClient.getProgramSummary(filters),
     staleTime: 30 * 60 * 1000, // 30 minutes for program data
     ...options,
@@ -127,6 +127,8 @@ export function useRuralRegionStatusChart(
     queryKey: ['rural', 'charts', 'region-status', filters],
     queryFn: () => apiClient.getRuralRegionStatusChart(filters),
     staleTime: 5 * 60 * 1000, // 5 minutes for chart data
+    retry: 2, // Reduce retry attempts to prevent hanging
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 3000),
     ...options,
   });
 }
@@ -139,6 +141,8 @@ export function useRuralStatusDonutChart(
     queryKey: ['rural', 'charts', 'status-donut', filters],
     queryFn: () => apiClient.getRuralStatusDonutChart(filters),
     staleTime: 5 * 60 * 1000, // 5 minutes for chart data
+    retry: 2,
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 3000),
     ...options,
   });
 }
@@ -151,6 +155,8 @@ export function useRuralTimelineChart(
     queryKey: ['rural', 'charts', 'timeline', filters],
     queryFn: () => apiClient.getRuralTimelineChart(filters),
     staleTime: 5 * 60 * 1000, // 5 minutes for chart data
+    retry: 2,
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 3000),
     ...options,
   });
 }
@@ -163,6 +169,8 @@ export function useRuralFinancialTable(
     queryKey: ['rural', 'financial-table', filters],
     queryFn: () => apiClient.getRuralFinancialTable(filters),
     staleTime: 10 * 60 * 1000, // 10 minutes for financial data
+    retry: 2,
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 3000),
     ...options,
   });
 }
@@ -179,6 +187,8 @@ export function useFARRegionStatusChart(
     queryKey: ['far', 'charts', 'region-status', filters],
     queryFn: () => apiClient.getFARRegionStatusChart(filters),
     staleTime: 5 * 60 * 1000, // 5 minutes for chart data
+    retry: 2,
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 3000),
     ...options,
   });
 }
@@ -191,6 +201,8 @@ export function useFARStatusDonutChart(
     queryKey: ['far', 'charts', 'status-donut', filters],
     queryFn: () => apiClient.getFARStatusDonutChart(filters),
     staleTime: 5 * 60 * 1000, // 5 minutes for chart data
+    retry: 2,
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 3000),
     ...options,
   });
 }
@@ -203,6 +215,8 @@ export function useFARTimelineChart(
     queryKey: ['far', 'charts', 'timeline', filters],
     queryFn: () => apiClient.getFARTimelineChart(filters),
     staleTime: 5 * 60 * 1000, // 5 minutes for chart data
+    retry: 2,
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 3000),
     ...options,
   });
 }
@@ -215,6 +229,8 @@ export function useFARFinancialTable(
     queryKey: ['far', 'financial-table', filters],
     queryFn: () => apiClient.getFARFinancialTable(filters),
     staleTime: 10 * 60 * 1000, // 10 minutes for financial data
+    retry: 2,
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 3000),
     ...options,
   });
 }
@@ -231,6 +247,8 @@ export function useFDSRegionStatusChart(
     queryKey: ['fds', 'charts', 'region-status', filters],
     queryFn: () => apiClient.getFDSRegionStatusChart(filters),
     staleTime: 5 * 60 * 1000, // 5 minutes for chart data
+    retry: 2,
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 3000),
     ...options,
   });
 }
@@ -243,6 +261,8 @@ export function useFDSStatusDonutChart(
     queryKey: ['fds', 'charts', 'status-donut', filters],
     queryFn: () => apiClient.getFDSStatusDonutChart(filters),
     staleTime: 5 * 60 * 1000, // 5 minutes for chart data
+    retry: 2,
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 3000),
     ...options,
   });
 }
@@ -255,6 +275,8 @@ export function useFDSTimelineChart(
     queryKey: ['fds', 'charts', 'timeline', filters],
     queryFn: () => apiClient.getFDSTimelineChart(filters),
     staleTime: 5 * 60 * 1000, // 5 minutes for chart data
+    retry: 2,
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 3000),
     ...options,
   });
 }
@@ -267,6 +289,8 @@ export function useFDSFinancialTable(
     queryKey: ['fds', 'financial-table', filters],
     queryFn: () => apiClient.getFDSFinancialTable(filters),
     staleTime: 10 * 60 * 1000, // 10 minutes for financial data
+    retry: 2,
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 3000),
     ...options,
   });
 }
