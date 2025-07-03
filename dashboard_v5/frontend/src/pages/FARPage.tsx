@@ -7,6 +7,7 @@ import { useKPIs } from '../api/hooks'
 import { KPISkeleton } from '../components/LoadingSpinner'
 import { useGlobalFilters } from '../contexts/FilterContext'
 import { ProgramErrorBoundary } from '../components/ProgramErrorBoundary'
+import { useMemo } from 'react'
 import { 
   FARRegionChart,
   FARStatusChart,
@@ -17,13 +18,18 @@ import {
 export default function FARPage() {
   const { filters } = useGlobalFilters()
 
-  // Get FAR-specific KPI data with global filters applied
-  const { data: kpis, isLoading: kpisLoading, error: kpisError } = useKPIs({
-    programa: 'FAR',
+  // Memoize chart filters to prevent infinite re-renders
+  const chartFilters = useMemo(() => ({
     regiao: filters.region,
     state: filters.state,
     municipality: filters.municipality,
     status: filters.status
+  }), [filters.region, filters.state, filters.municipality, filters.status])
+
+  // Get FAR-specific KPI data with global filters applied
+  const { data: kpis, isLoading: kpisLoading, error: kpisError } = useKPIs({
+    programa: 'FAR',
+    ...chartFilters
   })
 
   return (
@@ -111,7 +117,7 @@ export default function FARPage() {
                 <p className="text-gray-500">Carregando...</p>
               </div>
             ) : (
-              <FARRegionChart filters={filters} />
+              <FARRegionChart filters={chartFilters} />
             )}
           </div>
 
@@ -125,7 +131,7 @@ export default function FARPage() {
                 <p className="text-gray-500">Carregando...</p>
               </div>
             ) : (
-              <FARStatusChart filters={filters} />
+              <FARStatusChart filters={chartFilters} />
             )}
           </div>
         </div>
@@ -140,12 +146,12 @@ export default function FARPage() {
               <p className="text-gray-500">Carregando...</p>
             </div>
           ) : (
-            <FARTimelineChart filters={filters} />
+            <FARTimelineChart filters={chartFilters} />
           )}
         </div>
 
         {/* Financial Table */}
-        <FARFinancialTable filters={filters} />
+        <FARFinancialTable filters={chartFilters} />
       </div>
       </div>
     </ProgramErrorBoundary>

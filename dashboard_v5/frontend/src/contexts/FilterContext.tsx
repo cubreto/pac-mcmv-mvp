@@ -55,35 +55,29 @@ export function FilterProvider({ children }: FilterProviderProps) {
           }
         })
         
-        // Safely invalidate queries with specific query keys to prevent conflicts
-        setTimeout(() => {
-          try {
-            // Invalidate using the proper query key factory
-            queryClient.invalidateQueries({ 
-              predicate: (query) => {
-                const baseKey = query.queryKey[0] as string
-                const queryType = query.queryKey[1] as string
-                // Only invalidate MCMV queries with filter-dependent data
-                return baseKey === 'mcmv' && [
-                  'kpis',
-                  'regional', 
-                  'temporal',
-                  'delivery-forecast'
-                ].includes(queryType)
-              }
-            })
-            
-            // Also invalidate program-specific chart queries
-            queryClient.invalidateQueries({ 
-              predicate: (query) => {
-                const baseKey = query.queryKey[0] as string
-                return ['rural', 'far', 'fds'].includes(baseKey)
-              }
-            })
-          } catch (error) {
-            console.warn('Query invalidation failed:', error)
-          }
-        }, 0)
+        // DISABLED: Automatic query invalidation was causing infinite re-render loops
+        // React Query will handle cache invalidation based on query key changes
+        // setTimeout(() => {
+        //   try {
+        //     queryClient.invalidateQueries({ 
+        //       predicate: (query) => {
+        //         const baseKey = query.queryKey[0] as string
+        //         const queryType = query.queryKey[1] as string
+        //         return baseKey === 'mcmv' && [
+        //           'kpis', 'regional', 'temporal', 'delivery-forecast'
+        //         ].includes(queryType)
+        //       }
+        //     })
+        //     queryClient.invalidateQueries({ 
+        //       predicate: (query) => {
+        //         const baseKey = query.queryKey[0] as string
+        //         return ['rural', 'far', 'fds'].includes(baseKey)
+        //       }
+        //     })
+        //   } catch (error) {
+        //     console.warn('Query invalidation failed:', error)
+        //   }
+        // }, 0)
         
         return newFilters
       })
@@ -95,34 +89,27 @@ export function FilterProvider({ children }: FilterProviderProps) {
   const clearAllFilters = useCallback(() => {
     try {
       setFiltersState({})
-      // Clear all filter-dependent data queries when filters are cleared
-      setTimeout(() => {
-        try {
-          // Clear MCMV queries
-          queryClient.invalidateQueries({ 
-            predicate: (query) => {
-              const baseKey = query.queryKey[0] as string
-              const queryType = query.queryKey[1] as string
-              return baseKey === 'mcmv' && [
-                'kpis',
-                'regional', 
-                'temporal',
-                'delivery-forecast'
-              ].includes(queryType)
-            }
-          })
-          
-          // Clear program-specific queries
-          queryClient.invalidateQueries({ 
-            predicate: (query) => {
-              const baseKey = query.queryKey[0] as string
-              return ['rural', 'far', 'fds'].includes(baseKey)
-            }
-          })
-        } catch (error) {
-          console.warn('Query invalidation failed on clear:', error)
-        }
-      }, 0)
+      // DISABLED: Automatic query invalidation was causing infinite re-render loops  
+      // React Query will handle cache invalidation based on query key changes
+      // setTimeout(() => {
+      //   try {
+      //     queryClient.invalidateQueries({ 
+      //       predicate: (query) => {
+      //         const baseKey = query.queryKey[0] as string
+      //         const queryType = query.queryKey[1] as string
+      //         return baseKey === 'mcmv' && ['kpis', 'regional', 'temporal', 'delivery-forecast'].includes(queryType)
+      //       }
+      //     })
+      //     queryClient.invalidateQueries({ 
+      //       predicate: (query) => {
+      //         const baseKey = query.queryKey[0] as string
+      //         return ['rural', 'far', 'fds'].includes(baseKey)
+      //       }
+      //     })
+      //   } catch (error) {
+      //     console.warn('Query invalidation failed on clear:', error)
+      //   }
+      // }, 0)
     } catch (error) {
       console.error('Clear filters failed:', error)
     }

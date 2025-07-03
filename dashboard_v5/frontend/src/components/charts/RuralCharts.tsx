@@ -3,7 +3,7 @@
  * Specialized charts for RURAL program analysis
  */
 
-import { useMemo, useState } from 'react'
+import { useMemo, useState, useCallback } from 'react'
 import { 
   ResponsiveContainer, 
   BarChart, 
@@ -15,7 +15,6 @@ import {
   Legend,
   PieChart,
   Pie,
-  Cell,
   LineChart,
   Line
 } from 'recharts'
@@ -69,23 +68,39 @@ export function RuralRegionChart({ filters }: RuralChartProps) {
     )
   }
 
-  // Transform data for stacked bar chart
+  // Transform data for stacked bar chart - WITH DEFENSIVE PROGRAMMING
   const chartData = useMemo(() => {
     const regionMap = new Map()
     
     data.data.forEach((item: any) => {
-      const region = item.regiao
+      // SAFE GUARDS: Check for required fields
+      const region = item?.regiao
+      const situacao = item?.situacao_obra
+      const totalUh = item?.total_uh
+      
+      // Skip items with missing critical data
+      if (!region || !situacao || totalUh == null) {
+        return
+      }
+      
       if (!regionMap.has(region)) {
         regionMap.set(region, { regiao: region })
       }
-      regionMap.get(region)[item.situacao_obra] = item.total_uh
+      // Ensure numeric value
+      regionMap.get(region)[situacao] = Number(totalUh) || 0
     })
     
     return Array.from(regionMap.values())
   }, [data])
 
-  // Get unique status values for legend
-  const statusValues = [...new Set(data.data.map((item: any) => item.situacao_obra))] as string[]
+  // Get unique status values for legend - WITH SAFE FILTERING
+  const statusValues = useMemo(() => 
+    [...new Set(data.data
+      .map((item: any) => item?.situacao_obra)
+      .filter(Boolean)  // Remove null/undefined values
+    )] as string[], 
+    [data]
+  )
 
   return (
     <div className="h-64">
@@ -100,7 +115,7 @@ export function RuralRegionChart({ filters }: RuralChartProps) {
           <YAxis 
             fontSize={12}
             stroke="#666"
-            tickFormatter={(value) => value.toLocaleString('pt-BR')}
+            tickFormatter={(value) => (value != null ? value.toLocaleString('pt-BR') : '0')}
           />
           <Tooltip 
             formatter={(value: any) => [value?.toLocaleString('pt-BR'), 'UH']}
@@ -147,6 +162,7 @@ export function RuralStatusChart({ filters }: RuralChartProps) {
     )
   }
 
+  // SIMPLIFIED: Remove all complex memoization and use minimal PieChart
   return (
     <div className="h-64">
       <ResponsiveContainer width="100%" height="100%">
@@ -155,27 +171,12 @@ export function RuralStatusChart({ filters }: RuralChartProps) {
             data={data.data}
             cx="50%"
             cy="50%"
-            innerRadius={50}
-            outerRadius={100}
-            paddingAngle={2}
+            outerRadius={80}
             dataKey="total_uh"
             nameKey="status"
-          >
-            {data.data.map((_: any, index: number) => (
-              <Cell 
-                key={`cell-${index}`} 
-                fill={STATUS_COLORS[index % STATUS_COLORS.length]} 
-              />
-            ))}
-          </Pie>
-          <Tooltip 
-            formatter={(value: any) => [value?.toLocaleString('pt-BR'), 'UH']}
-            contentStyle={{ 
-              backgroundColor: 'white', 
-              border: '1px solid #ddd',
-              borderRadius: '4px'
-            }}
+            fill="#009688"
           />
+          <Tooltip />
           <Legend />
         </PieChart>
       </ResponsiveContainer>
@@ -338,9 +339,14 @@ export function RuralFinancialTable({ filters }: RuralChartProps) {
     return Object.values(grouped).sort((a: any, b: any) => b.totals.uh - a.totals.uh)
   }, [data])
 
-  const displayData = showAll ? groupedData : groupedData.slice(0, 5)
+  // Memoize display data to prevent re-renders
+  const displayData = useMemo(() => 
+    showAll ? groupedData : groupedData.slice(0, 5),
+    [showAll, groupedData]
+  )
 
-  const toggleState = (stateCode: string) => {
+  // Memoize toggle function to prevent re-renders
+  const toggleState = useCallback((stateCode: string) => {
     const newExpanded = new Set(expandedStates)
     if (newExpanded.has(stateCode)) {
       newExpanded.delete(stateCode)
@@ -348,7 +354,7 @@ export function RuralFinancialTable({ filters }: RuralChartProps) {
       newExpanded.add(stateCode)
     }
     setExpandedStates(newExpanded)
-  }
+  }, [expandedStates])
 
   return (
     <div className="bg-white rounded-lg border p-4">

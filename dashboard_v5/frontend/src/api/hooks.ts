@@ -124,7 +124,15 @@ export function useRuralRegionStatusChart(
   options?: UseQueryOptions<any>
 ) {
   return useQuery({
-    queryKey: ['rural', 'charts', 'region-status', filters],
+    queryKey: [
+      'rural', 
+      'charts', 
+      'region-status', 
+      filters?.regiao,
+      filters?.state,
+      filters?.municipality,
+      filters?.status
+    ],
     queryFn: () => apiClient.getRuralRegionStatusChart(filters),
     staleTime: 5 * 60 * 1000, // 5 minutes for chart data
     retry: 2, // Reduce retry attempts to prevent hanging

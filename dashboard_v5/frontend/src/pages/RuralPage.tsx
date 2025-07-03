@@ -7,24 +7,36 @@ import { useKPIs } from '../api/hooks'
 import { KPISkeleton } from '../components/LoadingSpinner'
 import { useGlobalFilters } from '../contexts/FilterContext'
 import { ProgramErrorBoundary } from '../components/ProgramErrorBoundary'
-import { 
-  RuralRegionChart,
-  RuralStatusChart,
-  RuralTimelineChart,
-  RuralFinancialTable 
-} from '../components/charts/RuralCharts'
+import { useMemo } from 'react'
+// Importing hooks to recreate our working test component
+import { useRuralRegionStatusChart } from '../api/hooks'
+import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, Legend } from 'recharts'
+
+// STATUS_COLORS from original component
+const STATUS_COLORS = [
+  '#009688', '#00796B', '#4DB6AC', '#26A69A', '#80CBC4', '#B2DFDB'
+]
 
 export default function RuralPage() {
   const { filters } = useGlobalFilters()
 
-  // Get RURAL-specific KPI data with global filters applied
+  const chartFilters = useMemo(() => {
+    if (!filters) return {}
+    return {
+      regiao: filters.region,
+      state: filters.state,
+      municipality: filters.municipality,
+      status: filters.status
+    }
+  }, [filters?.region, filters?.state, filters?.municipality, filters?.status])
+
   const { data: kpis, isLoading: kpisLoading, error: kpisError } = useKPIs({
     programa: 'RURAL',
-    regiao: filters.region,
-    state: filters.state,
-    municipality: filters.municipality,
-    status: filters.status
+    ...chartFilters
   })
+
+  // Use our working hook
+  const { data: chartData, isLoading: chartLoading, error: chartError } = useRuralRegionStatusChart(chartFilters)
 
   return (
     <ProgramErrorBoundary programName="RURAL">
@@ -61,96 +73,263 @@ export default function RuralPage() {
               <KPISkeleton />
             ) : kpisError ? (
               <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-                <p className="text-red-800">Erro ao carregar KPIs: {kpisError.message}</p>
+                <p className="text-red-800">❌ Error loading KPIs</p>
               </div>
             ) : kpis ? (
-              <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 <KPICard
-                  title="Total Projetos"
-                  value={kpis.total_projetos.toLocaleString('pt-BR')}
-                  subtitle="Projetos RURAL"
-                  color="orange"
-                />
-                <KPICard
-                  title="UH Contratadas"
-                  value={kpis.total_uh_contratadas.toLocaleString('pt-BR')}
+                  title="Total UH"
+                  value={kpis.total_uh_contratadas?.toLocaleString('pt-BR') || '0'}
                   subtitle="Unidades Habitacionais"
-                  color="green"
-                />
-                <KPICard
-                  title="Valor Contratado"
-                  value={`R$ ${(kpis.total_contratado / 1e6).toFixed(1)}M`}
-                  subtitle="Valor contratado"
                   color="blue"
                 />
                 <KPICard
-                  title="Valor Investido"
-                  value={`R$ ${(kpis.total_investimento / 1e6).toFixed(1)}M`}
-                  subtitle="Total investido"
+                  title="Investimento"
+                  value={kpis.total_investimento ? `R$ ${(kpis.total_investimento / 1000000).toFixed(1)}M` : 'R$ 0'}
+                  subtitle="Valor Total"
+                  color="green"
+                />
+                <KPICard
+                  title="Concluídas"
+                  value={kpis.uh_concluidas?.toLocaleString('pt-BR') || '0'}
+                  subtitle="UH Entregues"
                   color="purple"
                 />
                 <KPICard
-                  title="Investimento/UH"
-                  value={`R$ ${kpis.investimento_medio_por_uh.toLocaleString('pt-BR', { maximumFractionDigits: 0 })}`}
-                  subtitle="Média por unidade"
-                  color="teal"
+                  title="Em Andamento"
+                  value={kpis.uh_em_execucao?.toLocaleString('pt-BR') || '0'}
+                  subtitle="UH Em Execução"
+                  color="orange"
                 />
               </div>
-            ) : null}
+            ) : (
+              <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                <p className="text-gray-600">📊 KPI Cards v0.6 - Data fetching enabled</p>
+                <p className="text-sm text-gray-500 mt-1">Active filters: {JSON.stringify(chartFilters)}</p>
+              </div>
+            )}
           </div>
 
-        {/* Charts Section */}
+        {/* Charts Section - Back to exact v3.1 working config */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* UH por Região e Situação */}
-            <div className="bg-white rounded-lg shadow p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                📊 UH por Região e Situação
-              </h3>
-              {kpisLoading ? (
-                <div className="h-64 flex items-center justify-center bg-gray-50 rounded-lg">
-                  <p className="text-gray-500">Carregando...</p>
-                </div>
-              ) : (
-                <RuralRegionChart filters={filters} />
-              )}
-            </div>
-
-          {/* UH por Situação */}
+          {/* UH por Situação - ONLY WORKING CHART */}
           <div className="bg-white rounded-lg shadow p-6">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">
               📊 UH por Situação
             </h3>
-            {kpisLoading ? (
-              <div className="h-64 flex items-center justify-center bg-gray-50 rounded-lg">
-                <p className="text-gray-500">Carregando...</p>
+            {chartLoading ? (
+              <KPISkeleton />
+            ) : chartError ? (
+              <div className="h-64 flex items-center justify-center bg-red-50 rounded-lg">
+                <p className="text-red-600">❌ Chart Error: {chartError.message}</p>
               </div>
             ) : (
-              <RuralStatusChart filters={filters} />
+              <WorkingChart data={chartData} />
             )}
+          </div>
+
+          {/* All other charts disabled */}
+          <div className="bg-white rounded-lg shadow p-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">
+              📊 Other Charts
+            </h3>
+            <div className="h-64 flex items-center justify-center bg-gray-50 rounded-lg">
+              <p className="text-gray-500">Charts temporarily disabled for debugging</p>
+            </div>
           </div>
         </div>
 
-        {/* Timeline Chart */}
+        {/* Timeline Chart - DISABLED */}
         <div className="bg-white rounded-lg shadow p-6">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">
             📈 Timeline - Previsão de Entrega
           </h3>
-          {kpisLoading ? (
-            <div className="h-64 flex items-center justify-center bg-gray-50 rounded-lg">
-              <p className="text-gray-500">Carregando...</p>
-            </div>
-          ) : (
-            <RuralTimelineChart filters={filters} />
-          )}
+          <div className="h-64 flex items-center justify-center bg-gray-50 rounded-lg">
+            <p className="text-gray-500">Chart temporarily disabled for debugging</p>
+          </div>
         </div>
 
-        {/* Financial Table */}
-        <RuralFinancialTable filters={filters} />
+        {/* Financial Table - DISABLED */}
+        <div className="bg-white rounded-lg shadow p-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">
+            📋 Financial Table
+          </h3>
+          <div className="h-64 flex items-center justify-center bg-gray-50 rounded-lg">
+            <p className="text-gray-500">Table temporarily disabled for debugging</p>
+          </div>
+        </div>
       </div>
       </div>
     </ProgramErrorBoundary>
   )
 }
+
+// Our working chart component from v3.0 testing
+function WorkingChart({ data }: { data: any }) {
+  if (!data?.data?.length) {
+    return (
+      <div className="h-64 flex items-center justify-center bg-gray-50 rounded-lg">
+        <p className="text-gray-500">No chart data available</p>
+      </div>
+    )
+  }
+
+  // EXACT SAME transformation logic as original but stable
+  const chartData = useMemo(() => {
+    const regionMap = new Map()
+    
+    data.data.forEach((item: any) => {
+      const region = item?.regiao
+      const situacao = item?.situacao_obra
+      const totalUh = item?.total_uh
+      
+      if (!region || !situacao || totalUh == null) {
+        return
+      }
+      
+      if (!regionMap.has(region)) {
+        regionMap.set(region, { regiao: region })
+      }
+      regionMap.get(region)[situacao] = Number(totalUh) || 0
+    })
+    
+    return Array.from(regionMap.values())
+  }, [data])
+
+  const statusValues = useMemo(() => 
+    [...new Set(data.data
+      .map((item: any) => item?.situacao_obra)
+      .filter(Boolean)
+    )] as string[], 
+    [data]
+  )
+
+  return (
+    <div className="h-64">
+      <h4 className="font-semibold mb-2 px-4">📊 Working Chart v3.0-RESTORE</h4>
+      <ResponsiveContainer width="100%" height="80%">
+        <BarChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+          <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+          <XAxis 
+            dataKey="regiao" 
+            fontSize={12}
+            stroke="#666"
+          />
+          <YAxis 
+            fontSize={12}
+            stroke="#666"
+            tickFormatter={(value) => (value != null ? value.toLocaleString('pt-BR') : '0')}
+          />
+          <Tooltip 
+            formatter={(value: any) => [value?.toLocaleString('pt-BR'), 'UH']}
+            labelStyle={{ color: '#333' }}
+            contentStyle={{ 
+              backgroundColor: 'white', 
+              border: '1px solid #ddd',
+              borderRadius: '4px'
+            }}
+          />
+          <Legend />
+          {statusValues.map((status, index) => (
+            <Bar 
+              key={status}
+              dataKey={status}
+              stackId="uh"
+              fill={STATUS_COLORS[index % STATUS_COLORS.length]}
+            />
+          ))}
+        </BarChart>
+      </ResponsiveContainer>
+    </div>
+  )
+}
+
+// Removed unused MapTransformationTest component to fix TypeScript errors
+/*
+function MapTransformationTest({ data }: { data: any }) {
+  if (!data?.data?.length) {
+    return (
+      <div className="h-64 flex items-center justify-center bg-gray-50 rounded-lg">
+        <p className="text-gray-500">No chart data available</p>
+      </div>
+    )
+  }
+
+  // EXACT SAME transformation logic as original RuralRegionChart (lines 73-95)
+  const chartData = useMemo(() => {
+    const regionMap = new Map()
+    
+    data.data.forEach((item: any) => {
+      const region = item?.regiao
+      const situacao = item?.situacao_obra
+      const totalUh = item?.total_uh
+      
+      if (!region || !situacao || totalUh == null) {
+        return
+      }
+      
+      if (!regionMap.has(region)) {
+        regionMap.set(region, { regiao: region })
+      }
+      regionMap.get(region)[situacao] = Number(totalUh) || 0
+    })
+    
+    return Array.from(regionMap.values())
+  }, [data])
+
+  // EXACT SAME statusValues logic as original (lines 97-103)
+  const statusValues = useMemo(() => 
+    [...new Set(data.data
+      .map((item: any) => item?.situacao_obra)
+      .filter(Boolean)
+    )] as string[], 
+    [data]
+  )
+
+  // Test: Use EXACT color mapping from original component
+  return (
+    <div className="h-64">
+      <h4 className="font-semibold mb-2 px-4">📊 Original Colors Test v3.0</h4>
+      <p className="text-xs text-gray-500 px-4 mb-2">
+        Regions: {chartData.length}, Status Types: {statusValues.length}, Showing: EXACT ORIGINAL COLORS
+      </p>
+      <ResponsiveContainer width="100%" height="80%">
+        <BarChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+          <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+          <XAxis 
+            dataKey="regiao" 
+            fontSize={12}
+            stroke="#666"
+          />
+          <YAxis 
+            fontSize={12}
+            stroke="#666"
+            tickFormatter={(value) => (value != null ? value.toLocaleString('pt-BR') : '0')}
+          />
+          <Tooltip 
+            formatter={(value: any) => [value?.toLocaleString('pt-BR'), 'UH']}
+            labelStyle={{ color: '#333' }}
+            contentStyle={{ 
+              backgroundColor: 'white', 
+              border: '1px solid #ddd',
+              borderRadius: '4px'
+            }}
+          />
+          <Legend />
+          {statusValues.map((status, index) => (
+            <Bar 
+              key={status}
+              dataKey={status}
+              stackId="uh"
+              fill={STATUS_COLORS[index % STATUS_COLORS.length]}
+            />
+          ))}
+        </BarChart>
+      </ResponsiveContainer>
+    </div>
+  )
+}
+*/
 
 interface KPICardProps {
   title: string

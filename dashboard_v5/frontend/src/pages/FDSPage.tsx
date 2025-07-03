@@ -7,6 +7,7 @@ import { useKPIs } from '../api/hooks'
 import { KPISkeleton } from '../components/LoadingSpinner'
 import { useGlobalFilters } from '../contexts/FilterContext'
 import { ProgramErrorBoundary } from '../components/ProgramErrorBoundary'
+import { useMemo } from 'react'
 import { 
   FDSRegionChart,
   FDSStatusChart,
@@ -17,13 +18,18 @@ import {
 export default function FDSPage() {
   const { filters } = useGlobalFilters()
 
-  // Get FDS-specific KPI data with global filters applied
-  const { data: kpis, isLoading: kpisLoading, error: kpisError } = useKPIs({
-    programa: 'FDS',
+  // Memoize chart filters to prevent infinite re-renders
+  const chartFilters = useMemo(() => ({
     regiao: filters.region,
     state: filters.state,
     municipality: filters.municipality,
     status: filters.status
+  }), [filters.region, filters.state, filters.municipality, filters.status])
+
+  // Get FDS-specific KPI data with global filters applied
+  const { data: kpis, isLoading: kpisLoading, error: kpisError } = useKPIs({
+    programa: 'FDS',
+    ...chartFilters
   })
 
   return (
@@ -111,7 +117,7 @@ export default function FDSPage() {
                 <p className="text-gray-500">Carregando...</p>
               </div>
             ) : (
-              <FDSRegionChart filters={filters} />
+              <FDSRegionChart filters={chartFilters} />
             )}
           </div>
 
@@ -125,7 +131,7 @@ export default function FDSPage() {
                 <p className="text-gray-500">Carregando...</p>
               </div>
             ) : (
-              <FDSStatusChart filters={filters} />
+              <FDSStatusChart filters={chartFilters} />
             )}
           </div>
         </div>
@@ -140,12 +146,12 @@ export default function FDSPage() {
               <p className="text-gray-500">Carregando...</p>
             </div>
           ) : (
-            <FDSTimelineChart filters={filters} />
+            <FDSTimelineChart filters={chartFilters} />
           )}
         </div>
 
         {/* Financial Table */}
-        <FDSFinancialTable filters={filters} />
+        <FDSFinancialTable filters={chartFilters} />
       </div>
       </div>
     </ProgramErrorBoundary>

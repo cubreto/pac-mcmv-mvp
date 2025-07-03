@@ -17,7 +17,7 @@ from .config import settings
 logger = structlog.get_logger()
 
 # Database metadata
-metadata = MetaData(schema="mcmv_v5")
+metadata = MetaData(schema="mcmv_v2")
 Base = declarative_base(metadata=metadata)
 
 class DatabaseManager:
@@ -403,7 +403,7 @@ class DatabaseManager:
             projetos_acumulados,
             uh_acumuladas,
             media_movel_3meses
-        FROM mcmv_v5.vw_mat_temporal_trends
+        FROM mcmv_v2.vw_mat_temporal_trends
         WHERE mes_contratacao >= CURRENT_DATE - INTERVAL '%s months'
         """ % months
         
@@ -447,7 +447,7 @@ class DatabaseManager:
             progresso_sem_inicio,
             data_quality_score,
             ultima_verificacao
-        FROM mcmv_v5.vw_data_quality_metrics
+        FROM mcmv_v2.vw_data_quality_metrics
         ORDER BY data_quality_score DESC
         """
         
@@ -516,7 +516,7 @@ class DatabaseManager:
     async def _refresh_materialized_views(self):
         """Refresh all materialized views"""
         
-        refresh_query = "SELECT mcmv_v5.refresh_all_materialized_views()"
+        refresh_query = "SELECT mcmv_v2.refresh_all_materialized_views()"
         
         start_time = time.time()
         result = await self.execute_query(refresh_query)
