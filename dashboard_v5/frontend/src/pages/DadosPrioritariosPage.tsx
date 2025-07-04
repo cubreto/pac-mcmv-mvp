@@ -10,6 +10,7 @@ interface DadosPrioritariosFilters {
   ano_contratacao?: number
   mes_movimento?: number
   ano_movimento?: number
+  situacao_empreendimento?: string
 }
 
 export default function DadosPrioritariosPage() {
@@ -19,7 +20,7 @@ export default function DadosPrioritariosPage() {
   const { data, isLoading, error } = useDadosPrioritarios(filters)
   const { data: filterOptions, isLoading: filtersLoading } = useDadosPrioritariosFilters()
 
-  const updateFilter = (key: keyof DadosPrioritariosFilters, value: number | undefined) => {
+  const updateFilter = (key: keyof DadosPrioritariosFilters, value: number | string | undefined) => {
     setFilters(prev => ({
       ...prev,
       [key]: value || undefined
@@ -82,7 +83,7 @@ export default function DadosPrioritariosPage() {
           )}
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           {/* Ano de Contratação */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -142,6 +143,26 @@ export default function DadosPrioritariosPage() {
                   </option>
                 ))
               }
+            </select>
+          </div>
+
+          {/* Situação do Empreendimento */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              📋 Situação do Empreendimento
+            </label>
+            <select
+              value={filters.situacao_empreendimento || ''}
+              onChange={(e) => updateFilter('situacao_empreendimento', e.target.value || undefined)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+              disabled={filtersLoading}
+            >
+              <option value="">Todas as Situações</option>
+              {filterOptions?.situacoes_empreendimento?.map((situacao: string) => (
+                <option key={situacao} value={situacao}>
+                  {situacao}
+                </option>
+              ))}
             </select>
           </div>
         </div>
