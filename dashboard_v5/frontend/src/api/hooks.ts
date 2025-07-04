@@ -379,6 +379,7 @@ export function useDadosPrioritarios(
     ano_contratacao?: number;
     mes_movimento?: number;
     ano_movimento?: number;
+    situacao_empreendimento?: string;
   },
   options?: UseQueryOptions<any>
 ) {

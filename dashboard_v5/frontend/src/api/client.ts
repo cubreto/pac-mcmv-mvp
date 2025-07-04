@@ -539,11 +539,13 @@ class APIClient {
     ano_contratacao?: number;
     mes_movimento?: number;
     ano_movimento?: number;
+    situacao_empreendimento?: string;
   }): Promise<any> {
     const params = new URLSearchParams();
     if (filters?.ano_contratacao) params.append('ano_contratacao', filters.ano_contratacao.toString());
     if (filters?.mes_movimento) params.append('mes_movimento', filters.mes_movimento.toString());
     if (filters?.ano_movimento) params.append('ano_movimento', filters.ano_movimento.toString());
+    if (filters?.situacao_empreendimento) params.append('situacao_empreendimento', filters.situacao_empreendimento);
     
     const queryString = params.toString();
     const url = `/dados-prioritarios${queryString ? `?${queryString}` : ''}`;

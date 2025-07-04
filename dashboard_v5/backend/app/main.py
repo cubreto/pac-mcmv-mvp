@@ -2013,12 +2013,13 @@ async def get_dados_prioritarios(
     ano_contratacao: Optional[int] = Query(None, description="Contract year filter (EXTRACT(year FROM dt_contratacao))"),
     mes_movimento: Optional[int] = Query(None, description="Movement month filter (1-12)"),
     ano_movimento: Optional[int] = Query(None, description="Movement year filter"),
+    situacao_empreendimento: Optional[str] = Query(None, description="Project status filter"),
     database = Depends(get_database)
 ):
     """Get dados prioritarios table data with programa and situacao_empreendimento grouping"""
     
     # Create cache key including all filter parameters
-    filters_str = f"{ano_contratacao or 'ALL'}:{mes_movimento or 'ALL'}:{ano_movimento or 'ALL'}"
+    filters_str = f"{ano_contratacao or 'ALL'}:{mes_movimento or 'ALL'}:{ano_movimento or 'ALL'}:{situacao_empreendimento or 'ALL'}"
     cache_key = f"dados_prioritarios:table:{filters_str}"
     cache_ttl = settings.business_rules.get_cache_ttl('tables')
     
@@ -2043,6 +2044,10 @@ async def get_dados_prioritarios(
         if ano_movimento:
             where_conditions.append("EXTRACT(year FROM data_movimento) = :ano_movimento")
             params["ano_movimento"] = ano_movimento
+            
+        if situacao_empreendimento:
+            where_conditions.append("situacao_empreendimento = :situacao_empreendimento")
+            params["situacao_empreendimento"] = situacao_empreendimento
         
         where_clause = " AND ".join(where_conditions)
         
@@ -2144,8 +2149,17 @@ async def get_dados_prioritarios_filters(database = Depends(get_database)):
         ORDER BY ano DESC, mes ASC
         """
         
+        # Get available situações do empreendimento
+        situacoes_query = """
+        SELECT DISTINCT situacao_empreendimento
+        FROM mcmv_v2.dados_prioritarios 
+        WHERE situacao_empreendimento IS NOT NULL
+        ORDER BY situacao_empreendimento ASC
+        """
+        
         anos_data = await database.get_chart_data(anos_query, {})
         movimento_data = await database.get_chart_data(movimento_query, {})
+        situacoes_data = await database.get_chart_data(situacoes_query, {})
         
         # Process movement data into grouped format
         movimento_options = {}
@@ -2164,6 +2178,7 @@ async def get_dados_prioritarios_filters(database = Depends(get_database)):
         result = {
             "anos_contratacao": [int(row['ano']) for row in anos_data],
             "movimento_dates": movimento_options,
+            "situacoes_empreendimento": [row['situacao_empreendimento'] for row in situacoes_data],
             "metadata": {
                 "cache_ttl": cache_ttl
             }
