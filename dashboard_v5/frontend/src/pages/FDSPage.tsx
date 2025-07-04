@@ -8,12 +8,10 @@ import { KPISkeleton } from '../components/LoadingSpinner'
 import { useGlobalFilters } from '../contexts/FilterContext'
 import { ProgramErrorBoundary } from '../components/ProgramErrorBoundary'
 import { useMemo } from 'react'
-import { 
-  FDSRegionChart,
-  FDSStatusChart,
-  FDSTimelineChart,
-  FDSFinancialTable 
-} from '../components/charts/FDSCharts'
+import FDSWorkingChart from '../components/charts/FDSWorkingChart'
+import FDSStatusDistributionChart from '../components/charts/FDSStatusDistributionChart'
+import FDSTimelineChart from '../components/charts/FDSTimelineChart'
+import FDSFinancialTable from '../components/charts/FDSFinancialTable'
 
 export default function FDSPage() {
   const { filters } = useGlobalFilters()
@@ -117,22 +115,16 @@ export default function FDSPage() {
                 <p className="text-gray-500">Carregando...</p>
               </div>
             ) : (
-              <FDSRegionChart filters={chartFilters} />
+              <FDSWorkingChart filters={chartFilters} />
             )}
           </div>
 
           {/* UH por Situação */}
           <div className="bg-white rounded-lg shadow p-6">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">
-              📊 UH por Situação
+              📊 Distribuição por Status
             </h3>
-            {kpisLoading ? (
-              <div className="h-64 flex items-center justify-center bg-gray-50 rounded-lg">
-                <p className="text-gray-500">Carregando...</p>
-              </div>
-            ) : (
-              <FDSStatusChart filters={chartFilters} />
-            )}
+            <FDSStatusDistributionChart filters={chartFilters} />
           </div>
         </div>
 
@@ -141,13 +133,7 @@ export default function FDSPage() {
           <h3 className="text-lg font-semibold text-gray-900 mb-4">
             📈 Timeline - Previsão de Entrega
           </h3>
-          {kpisLoading ? (
-            <div className="h-64 flex items-center justify-center bg-gray-50 rounded-lg">
-              <p className="text-gray-500">Carregando...</p>
-            </div>
-          ) : (
-            <FDSTimelineChart filters={chartFilters} />
-          )}
+          <FDSTimelineChart filters={chartFilters} />
         </div>
 
         {/* Financial Table */}

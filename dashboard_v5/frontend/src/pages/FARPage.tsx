@@ -8,12 +8,11 @@ import { KPISkeleton } from '../components/LoadingSpinner'
 import { useGlobalFilters } from '../contexts/FilterContext'
 import { ProgramErrorBoundary } from '../components/ProgramErrorBoundary'
 import { useMemo } from 'react'
-import { 
-  FARRegionChart,
-  FARStatusChart,
-  FARTimelineChart,
-  FARFinancialTable 
-} from '../components/charts/FARCharts'
+// import { FARRegionChart } from '../components/charts/FARCharts'
+import FARWorkingChart from '../components/charts/FARWorkingChart'
+import FARStatusDistributionChart from '../components/charts/FARStatusDistributionChart'
+import FARTimelineChart from '../components/charts/FARTimelineChart'
+import FARFinancialTable from '../components/charts/FARFinancialTable'
 
 export default function FARPage() {
   const { filters } = useGlobalFilters()
@@ -73,31 +72,31 @@ export default function FARPage() {
             <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
               <KPICard
                 title="Total Projetos"
-                value={kpis.total_projetos.toLocaleString('pt-BR')}
+                value={kpis.total_projetos?.toLocaleString('pt-BR') || '0'}
                 subtitle="Projetos FAR"
                 color="blue"
               />
               <KPICard
                 title="UH Contratadas"
-                value={kpis.total_uh_contratadas.toLocaleString('pt-BR')}
+                value={kpis.total_uh_contratadas?.toLocaleString('pt-BR') || '0'}
                 subtitle="Unidades Habitacionais"
                 color="green"
               />
               <KPICard
                 title="Valor Contratado"
-                value={`R$ ${(kpis.total_contratado / 1e9).toFixed(1)}B`}
+                value={kpis.total_contratado ? `R$ ${(kpis.total_contratado / 1e9).toFixed(1)}B` : 'R$ 0'}
                 subtitle="Valor contratado"
                 color="purple"
               />
               <KPICard
                 title="Valor Investido"
-                value={`R$ ${(kpis.total_investimento / 1e9).toFixed(1)}B`}
+                value={kpis.total_investimento ? `R$ ${(kpis.total_investimento / 1e9).toFixed(1)}B` : 'R$ 0'}
                 subtitle="Total investido"
                 color="orange"
               />
               <KPICard
                 title="Investimento/UH"
-                value={`R$ ${kpis.investimento_medio_por_uh.toLocaleString('pt-BR', { maximumFractionDigits: 0 })}`}
+                value={kpis.investimento_medio_por_uh ? `R$ ${kpis.investimento_medio_por_uh.toLocaleString('pt-BR', { maximumFractionDigits: 0 })}` : 'R$ 0'}
                 subtitle="Média por unidade"
                 color="teal"
               />
@@ -117,22 +116,16 @@ export default function FARPage() {
                 <p className="text-gray-500">Carregando...</p>
               </div>
             ) : (
-              <FARRegionChart filters={chartFilters} />
+              <FARWorkingChart filters={chartFilters} />
             )}
           </div>
 
-          {/* UH por Situação */}
+          {/* Status Distribution Chart */}
           <div className="bg-white rounded-lg shadow p-6">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">
-              📊 UH por Situação
+              📊 Distribuição por Status
             </h3>
-            {kpisLoading ? (
-              <div className="h-64 flex items-center justify-center bg-gray-50 rounded-lg">
-                <p className="text-gray-500">Carregando...</p>
-              </div>
-            ) : (
-              <FARStatusChart filters={chartFilters} />
-            )}
+            <FARStatusDistributionChart filters={chartFilters} />
           </div>
         </div>
 
@@ -141,17 +134,16 @@ export default function FARPage() {
           <h3 className="text-lg font-semibold text-gray-900 mb-4">
             📈 Timeline - Previsão de Entrega
           </h3>
-          {kpisLoading ? (
-            <div className="h-64 flex items-center justify-center bg-gray-50 rounded-lg">
-              <p className="text-gray-500">Carregando...</p>
-            </div>
-          ) : (
-            <FARTimelineChart filters={chartFilters} />
-          )}
+          <FARTimelineChart filters={chartFilters} />
         </div>
 
         {/* Financial Table */}
-        <FARFinancialTable filters={chartFilters} />
+        <div className="bg-white rounded-lg shadow p-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">
+            💰 Tabela Financeira FAR
+          </h3>
+          <FARFinancialTable filters={chartFilters} />
+        </div>
       </div>
       </div>
     </ProgramErrorBoundary>
