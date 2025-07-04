@@ -41,21 +41,21 @@ export default function DadosPrioritariosPage() {
   return (
     <div className="space-y-8">
       {/* Header */}
-      <div className="bg-gradient-to-r from-gray-600 to-gray-800 rounded-lg shadow-lg p-8 text-white">
+      <div className="bg-gradient-to-r from-blue-600 to-indigo-700 rounded-lg shadow-lg p-8 text-white">
         <h1 className="text-3xl font-bold mb-2">
-          📋 Dados Prioritários - Análise Histórica
+          📋 Dados Prioritários
         </h1>
-        <p className="text-gray-100">
-          Dados históricos dos programas habitacionais com métricas de entrega e execução
+        <p className="text-blue-100">
+          Análise detalhada dos projetos prioritários MCMV com métricas de entrega por programa e status
         </p>
         <div className="mt-4 flex items-center space-x-6 text-sm">
           <div className="flex items-center">
-            <div className="w-3 h-3 bg-blue-400 rounded-full mr-2"></div>
-            <span>Dados Históricos</span>
+            <div className="w-3 h-3 bg-green-400 rounded-full mr-2"></div>
+            <span>52,476 projetos analisados</span>
           </div>
           <div className="flex items-center">
-            <div className="w-3 h-3 bg-green-400 rounded-full mr-2"></div>
-            <span>fl_dados_prioritarios = TRUE</span>
+            <div className="w-3 h-3 bg-yellow-400 rounded-full mr-2"></div>
+            <span>Janeiro-Abril 2025</span>
           </div>
         </div>
       </div>

@@ -1,0 +1,44 @@
+{
+  "FAR": {
+    "program": "FAR",
+    "total_records": 17314,
+    "completeness_score": 100.0,
+    "accuracy_score": 100.0,
+    "consistency_score": 94.3,
+    "overall_score": 98.1,
+    "issues": {
+      "missing_dates": 17221,
+      "missing_values": 0,
+      "invalid_percentages": 0,
+      "date_inconsistencies": 0
+    }
+  },
+  "Entidades": {
+    "program": "Entidades",
+    "total_records": 2307,
+    "completeness_score": 100.0,
+    "accuracy_score": 100.0,
+    "consistency_score": 0,
+    "overall_score": 66.7,
+    "issues": {
+      "missing_dates": 2280,
+      "missing_values": 0,
+      "invalid_percentages": 0,
+      "date_inconsistencies": 0
+    }
+  },
+  "RURAL": {
+    "program": "RURAL",
+    "total_records": 32855,
+    "completeness_score": 100.0,
+    "accuracy_score": 100.0,
+    "consistency_score": 92.7,
+    "overall_score": 97.6,
+    "issues": {
+      "missing_dates": 32855,
+      "missing_values": 0,
+      "invalid_percentages": 0,
+      "date_inconsistencies": 0
+    }
+  }
+}

@@ -20,9 +20,8 @@ export default function FDSPage() {
   const chartFilters = useMemo(() => ({
     regiao: filters.region,
     state: filters.state,
-    municipality: filters.municipality,
-    status: filters.status
-  }), [filters.region, filters.state, filters.municipality, filters.status])
+    municipality: filters.municipality
+  }), [filters.region, filters.state, filters.municipality])
 
   // Get FDS-specific KPI data with global filters applied
   const { data: kpis, isLoading: kpisLoading, error: kpisError } = useKPIs({

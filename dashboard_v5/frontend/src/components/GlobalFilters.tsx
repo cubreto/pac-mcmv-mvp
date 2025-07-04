@@ -16,7 +16,6 @@ export default function GlobalFilters() {
     filters.region,
     filters.state
   )
-  const { data: statusOptions, isLoading: statusLoading } = useFilters.useStatusOptions()
   const { data: programs, isLoading: programsLoading } = useFilters.usePrograms(
     filters.region,
     filters.state,
@@ -34,10 +33,10 @@ export default function GlobalFilters() {
       <div className="flex items-center justify-between mb-6">
         <div>
           <h3 className="text-lg font-semibold text-gray-900">
-            🔍 Filtros Avançados
+            🔍 Filtros Geográficos
           </h3>
           <p className="text-sm text-gray-600 mt-1">
-            Use os filtros em cascata para refinar sua análise em todas as abas
+            Filtros de localização e programa aplicados em Dashboard, RURAL, FAR e FDS
           </p>
         </div>
         
@@ -52,7 +51,7 @@ export default function GlobalFilters() {
       </div>
 
       {/* Filter Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         {/* Region Filter */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -108,26 +107,6 @@ export default function GlobalFilters() {
             {municipalities?.data?.map((municipality, index) => (
               <option key={`${municipality.name}-${index}`} value={municipality.name}>
                 {municipality.name}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        {/* Status Filter */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            🚧 Situação da Obra
-          </label>
-          <select
-            value={filters.status || ''}
-            onChange={(e) => updateFilter('status', e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
-            disabled={statusLoading}
-          >
-            <option value="">Todas as Situações</option>
-            {statusOptions?.data?.map((status) => (
-              <option key={status.code} value={status.code}>
-                {status.label}
               </option>
             ))}
           </select>
@@ -196,7 +175,7 @@ export default function GlobalFilters() {
       )}
 
       {/* Loading States */}
-      {(regionsLoading || statesLoading || municipalitiesLoading || statusLoading || programsLoading) && (
+      {(regionsLoading || statesLoading || municipalitiesLoading || programsLoading) && (
         <div className="absolute inset-0 bg-white bg-opacity-50 flex items-center justify-center rounded-lg">
           <div className="flex items-center space-x-2 text-gray-600">
             <div className="animate-spin w-5 h-5 border-2 border-gray-300 border-t-blue-500 rounded-full"></div>

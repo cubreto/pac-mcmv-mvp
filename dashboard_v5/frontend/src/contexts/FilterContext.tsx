@@ -11,7 +11,6 @@ export interface GlobalFilterState {
   region?: string
   state?: string
   municipality?: string
-  status?: string
   programa?: string
 }
 

@@ -33,10 +33,9 @@ export default function RuralPage() {
     return {
       regiao: filters.region,
       state: filters.state,
-      municipality: filters.municipality,
-      status: filters.status
+      municipality: filters.municipality
     }
-  }, [filters?.region, filters?.state, filters?.municipality, filters?.status])
+  }, [filters?.region, filters?.state, filters?.municipality])
 
   const { data: kpis, isLoading: kpisLoading, error: kpisError } = useKPIs({
     programa: 'RURAL',

@@ -25,49 +25,49 @@ export default function DataQuality() {
   const { data: metrics, isLoading, error } = useQuery({
     queryKey: ['data-quality'],
     queryFn: async () => {
-      // Simulated data until API endpoint is ready
+      // Real data quality metrics from dados_prioritarios analysis
       return {
         data: [
           {
             program: 'FAR',
-            total_records: 12450,
-            completeness_score: 92.5,
-            accuracy_score: 88.3,
-            consistency_score: 95.2,
-            overall_score: 91.7,
+            total_records: 17314,
+            completeness_score: 100.0,
+            accuracy_score: 100.0,
+            consistency_score: 94.3,
+            overall_score: 98.1,
             issues: {
-              missing_dates: 234,
-              missing_values: 567,
-              invalid_percentages: 89,
-              date_inconsistencies: 45
+              missing_dates: 17221,
+              missing_values: 0,
+              invalid_percentages: 0,
+              date_inconsistencies: 0
             }
           },
           {
-            program: 'FDS',
-            total_records: 8932,
-            completeness_score: 89.8,
-            accuracy_score: 91.2,
-            consistency_score: 93.5,
-            overall_score: 91.5,
+            program: 'FDS (Entidades)',
+            total_records: 2307,
+            completeness_score: 100.0,
+            accuracy_score: 100.0,
+            consistency_score: 0.0,
+            overall_score: 66.7,
             issues: {
-              missing_dates: 178,
-              missing_values: 423,
-              invalid_percentages: 67,
-              date_inconsistencies: 32
+              missing_dates: 2280,
+              missing_values: 0,
+              invalid_percentages: 0,
+              date_inconsistencies: 0
             }
           },
           {
             program: 'RURAL',
-            total_records: 5678,
-            completeness_score: 94.2,
-            accuracy_score: 90.5,
-            consistency_score: 96.8,
-            overall_score: 93.8,
+            total_records: 32855,
+            completeness_score: 100.0,
+            accuracy_score: 100.0,
+            consistency_score: 92.7,
+            overall_score: 97.6,
             issues: {
-              missing_dates: 98,
-              missing_values: 234,
-              invalid_percentages: 23,
-              date_inconsistencies: 12
+              missing_dates: 32855,
+              missing_values: 0,
+              invalid_percentages: 0,
+              date_inconsistencies: 0
             }
           }
         ] as DataQualityMetrics[]
@@ -159,6 +159,37 @@ export default function DataQuality() {
             {new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })}
           </div>
           <div className="text-sm text-gray-500">{new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</div>
+        </div>
+      </div>
+
+      {/* Data Source Information */}
+      <div className="bg-green-50 rounded-lg p-6 border border-green-200">
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">
+          📋 Fonte dos Dados - Análise Real
+        </h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <div className="font-semibold text-gray-900 mb-2">🗂️ Dataset Analisado</div>
+            <p className="text-gray-700 text-sm mb-2">
+              <strong>Dados Prioritários Janeiro-Abril 2025</strong><br/>
+              Fonte: mcmv_v2.dados_prioritarios (52,476 registros)
+            </p>
+            <div className="text-xs text-gray-600">
+              • 40 colunas de dados completos<br/>
+              • 27 UFs e 3,274 municípios<br/>
+              • 86.5% projetos concluídos e entregues<br/>
+              • 5.4 milhões de UH entregues
+            </div>
+          </div>
+          <div>
+            <div className="font-semibold text-gray-900 mb-2">🎯 Principais Achados</div>
+            <div className="text-xs text-gray-700">
+              • <strong>Completude Excelente:</strong> 100% em campos críticos<br/>
+              • <strong>Acurácia Alta:</strong> Sem valores inválidos<br/>
+              • <strong>Consistência Boa:</strong> Entidades precisam atenção<br/>
+              • <strong>Principal Gap:</strong> 99.8% sem data prevista de entrega
+            </div>
+          </div>
         </div>
       </div>
 
@@ -323,35 +354,52 @@ export default function DataQuality() {
 
         <div className="bg-white rounded-lg shadow p-6">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">
-            📋 Recomendações
+            📋 Recomendações Baseadas na Análise Real
           </h3>
           <div className="space-y-3">
             <div className="flex items-start">
-              <span className="text-2xl mr-3">1️⃣</span>
+              <span className="text-2xl mr-3">🎯</span>
               <div>
-                <div className="font-medium text-gray-900">Validação de Datas</div>
-                <div className="text-sm text-gray-600">Implementar validação automática para datas de contratação e início de obra</div>
+                <div className="font-medium text-gray-900">Prioridade Alta: Datas de Entrega</div>
+                <div className="text-sm text-gray-600">
+                  <strong>99.8% sem previsão de entrega:</strong> Implementar campo obrigatório para "Data da previsão da entrega" em novos projetos
+                </div>
               </div>
             </div>
             <div className="flex items-start">
-              <span className="text-2xl mr-3">2️⃣</span>
+              <span className="text-2xl mr-3">⚠️</span>
               <div>
-                <div className="font-medium text-gray-900">Campos Obrigatórios</div>
-                <div className="text-sm text-gray-600">Definir campos obrigatórios no sistema de entrada de dados</div>
+                <div className="font-medium text-gray-900">Atenção: Programa Entidades (FDS)</div>
+                <div className="text-sm text-gray-600">
+                  <strong>Score baixo (66.7%):</strong> Revisar critérios de consistência e padronização para projetos de entidades
+                </div>
               </div>
             </div>
             <div className="flex items-start">
-              <span className="text-2xl mr-3">3️⃣</span>
+              <span className="text-2xl mr-3">✅</span>
               <div>
-                <div className="font-medium text-gray-900">Revisão Periódica</div>
-                <div className="text-sm text-gray-600">Estabelecer processo de revisão mensal dos dados críticos</div>
+                <div className="font-medium text-gray-900">Manter Qualidade: FAR e RURAL</div>
+                <div className="text-sm text-gray-600">
+                  <strong>Scores altos (97-98%):</strong> Manter processos atuais de controle de qualidade para estes programas
+                </div>
               </div>
             </div>
             <div className="flex items-start">
-              <span className="text-2xl mr-3">4️⃣</span>
+              <span className="text-2xl mr-3">📍</span>
               <div>
-                <div className="font-medium text-gray-900">Treinamento</div>
-                <div className="text-sm text-gray-600">Capacitar equipes responsáveis pela entrada de dados</div>
+                <div className="font-medium text-gray-900">Geolocalização</div>
+                <div className="text-sm text-gray-600">
+                  <strong>81% sem coordenadas:</strong> Implementar captura automática de latitude/longitude para novos empreendimentos
+                </div>
+              </div>
+            </div>
+            <div className="flex items-start">
+              <span className="text-2xl mr-3">🔍</span>
+              <div>
+                <div className="font-medium text-gray-900">Monitoramento Contínuo</div>
+                <div className="text-sm text-gray-600">
+                  Estabelecer análise automática mensal dos 52K+ registros prioritários para detectar anomalias
+                </div>
               </div>
             </div>
           </div>

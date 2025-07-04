@@ -21,7 +21,6 @@ export default function Dashboard() {
   const { data: kpis, isLoading: kpisLoading, error: kpisError } = useKPIs({
     programa: filters.programa,
     regiao: filters.region,
-    status: filters.status,
     state: filters.state,
     municipality: filters.municipality
   })
@@ -31,7 +30,6 @@ export default function Dashboard() {
     regiao: filters.region,
     state: filters.state,
     municipality: filters.municipality,
-    status: filters.status,
     programa: filters.programa
   })
   const { data: deliveryForecast, isLoading: forecastLoading, error: forecastError } = useDeliveryForecast(filters.programa)
