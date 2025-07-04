@@ -139,7 +139,7 @@ export default function DadosPrioritariosPage() {
               {filters.ano_movimento && 
                 filterOptions?.movimento_dates?.[filters.ano_movimento]?.map((mes: number) => (
                   <option key={mes} value={mes}>
-                    {monthNames[mes - 1]} ({mes})
+                    {monthNames[mes - 1]}
                   </option>
                 ))
               }
