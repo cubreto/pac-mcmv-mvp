@@ -162,6 +162,40 @@ export default function DataQuality() {
         </div>
       </div>
 
+      {/* Metrics Explanation */}
+      <div className="bg-blue-50 rounded-lg p-6 border border-blue-200">
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">
+          📖 Entendendo as Métricas de Qualidade
+        </h3>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+          <div>
+            <div className="font-semibold text-gray-900 mb-1">📊 Completude</div>
+            <p className="text-gray-700">
+              Percentual de campos obrigatórios preenchidos. Mede se todos os dados essenciais estão presentes (datas, valores, códigos).
+            </p>
+          </div>
+          <div>
+            <div className="font-semibold text-gray-900 mb-1">🎯 Acurácia</div>
+            <p className="text-gray-700">
+              Precisão dos dados inseridos. Verifica se valores estão dentro de faixas esperadas e se percentuais são válidos (0-100%).
+            </p>
+          </div>
+          <div>
+            <div className="font-semibold text-gray-900 mb-1">🔄 Consistência</div>
+            <p className="text-gray-700">
+              Coerência lógica entre campos. Valida se datas seguem ordem cronológica e se totais correspondem às somas parciais.
+            </p>
+          </div>
+        </div>
+        <div className="mt-4 pt-4 border-t border-blue-200">
+          <div className="font-semibold text-gray-900 mb-1">⭐ Score Geral</div>
+          <p className="text-gray-700 text-sm">
+            Média ponderada das três métricas, representando a qualidade global dos dados do programa. 
+            Meta: manter acima de 95% para garantir confiabilidade nas análises.
+          </p>
+        </div>
+      </div>
+
       {/* Program Quality Metrics */}
       <div className="bg-white rounded-lg shadow overflow-hidden">
         <div className="px-6 py-4 border-b border-gray-200">
@@ -236,26 +270,50 @@ export default function DataQuality() {
           <h3 className="text-lg font-semibold text-gray-900 mb-4">
             🔍 Problemas por Tipo
           </h3>
+          
+          {/* Issues Legend */}
+          <div className="bg-gray-50 rounded-lg p-4 mb-6">
+            <h4 className="font-semibold text-gray-900 mb-3">Tipos de Problemas Identificados:</h4>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+              <div>
+                <span className="font-medium text-red-600">📅 Datas Faltantes:</span>
+                <span className="text-gray-700 ml-1">Campos de data obrigatórios em branco</span>
+              </div>
+              <div>
+                <span className="font-medium text-orange-600">💰 Valores Faltantes:</span>
+                <span className="text-gray-700 ml-1">Campos monetários ou numéricos vazios</span>
+              </div>
+              <div>
+                <span className="font-medium text-yellow-600">📊 Percentuais Inválidos:</span>
+                <span className="text-gray-700 ml-1">Percentuais fora da faixa 0-100%</span>
+              </div>
+              <div>
+                <span className="font-medium text-purple-600">🔄 Inconsistências de Data:</span>
+                <span className="text-gray-700 ml-1">Datas fora de ordem cronológica</span>
+              </div>
+            </div>
+          </div>
+
           <div className="space-y-4">
             {metrics?.data.map((metric) => (
               <div key={metric.program} className="border-b border-gray-200 pb-4 last:border-0">
                 <div className="font-medium text-gray-900 mb-2">{metric.program}</div>
                 <div className="grid grid-cols-2 gap-2 text-sm">
                   <div className="flex justify-between">
-                    <span className="text-gray-600">Datas Faltantes:</span>
-                    <span className="font-medium">{metric.issues.missing_dates}</span>
+                    <span className="text-gray-600">📅 Datas Faltantes:</span>
+                    <span className="font-medium text-red-600">{metric.issues.missing_dates}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-600">Valores Faltantes:</span>
-                    <span className="font-medium">{metric.issues.missing_values}</span>
+                    <span className="text-gray-600">💰 Valores Faltantes:</span>
+                    <span className="font-medium text-orange-600">{metric.issues.missing_values}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-600">Percentuais Inválidos:</span>
-                    <span className="font-medium">{metric.issues.invalid_percentages}</span>
+                    <span className="text-gray-600">📊 Percentuais Inválidos:</span>
+                    <span className="font-medium text-yellow-600">{metric.issues.invalid_percentages}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-600">Inconsistências de Data:</span>
-                    <span className="font-medium">{metric.issues.date_inconsistencies}</span>
+                    <span className="text-gray-600">🔄 Inconsistências de Data:</span>
+                    <span className="font-medium text-purple-600">{metric.issues.date_inconsistencies}</span>
                   </div>
                 </div>
               </div>
