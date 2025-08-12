@@ -30,7 +30,7 @@ class DatabaseSettings(BaseSettings):
 
 class RedisSettings(BaseSettings):
     """Redis configuration for caching"""
-    host: str = Field(default="localhost", env="REDIS_HOST")
+    host: str = Field(default="mcmv-v5-redis", env="REDIS_HOST")
     port: int = Field(default=6379, env="REDIS_PORT")
     database: int = Field(default=0, env="REDIS_DB")
     password: Optional[str] = Field(default=None, env="REDIS_PASSWORD")
@@ -45,7 +45,7 @@ class APISettings(BaseSettings):
     """API configuration"""
     title: str = "MCMV Dashboard API v5"
     description: str = "High-performance MCMV dashboard with materialized views"
-    version: str = "5.0.0"
+    version: str = "5.0.7"
     base_path: str = "/api/v5"
     cors_origins: List[str] = Field(default_factory=lambda: [
         "http://localhost:3000",

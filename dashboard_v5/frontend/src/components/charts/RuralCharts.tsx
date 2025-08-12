@@ -18,6 +18,7 @@ import {
   LineChart,
   Line
 } from 'recharts'
+import { formatCurrencyTable } from '../../utils/formatters'
 import { 
   useRuralRegionStatusChart, 
   useRuralStatusDonutChart, 
@@ -37,6 +38,28 @@ const RURAL_COLORS = {
 const STATUS_COLORS = [
   '#009688', '#00796B', '#4DB6AC', '#26A69A', '#80CBC4', '#B2DFDB'
 ]
+
+// Helper function to format month for display
+function formatMonth(dateString: string): string {
+  try {
+    const date = new Date(dateString)
+    if (isNaN(date.getTime())) {
+      return dateString // Return original if invalid
+    }
+    
+    const monthNames = [
+      'Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun',
+      'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'
+    ]
+    
+    // Use UTC methods to avoid timezone issues
+    const month = date.getUTCMonth()
+    const year = date.getUTCFullYear()
+    return `${monthNames[month]}/${year.toString().slice(-2)}`
+  } catch (error) {
+    return dateString
+  }
+}
 
 interface RuralChartProps {
   filters?: {
@@ -210,20 +233,10 @@ export function RuralTimelineChart({ filters }: RuralChartProps) {
     if (!data?.data?.length) return []
     
     return data.data.map((item: any) => {
-      try {
-        const date = new Date(item.delivery_month)
-        return {
-          ...item,
-          month: date.toLocaleDateString('pt-BR', { 
-            year: 'numeric', 
-            month: 'short' 
-          })
-        }
-      } catch (error) {
-        return {
-          ...item,
-          month: 'Data Inválida'
-        }
+      return {
+        ...item,
+        month: formatMonth(item.delivery_month || item.month || item.date),
+        total_uh: Number(item.total_uh) || 0
       }
     })
   }, [data])
@@ -276,7 +289,7 @@ export function RuralFinancialTable({ filters }: RuralChartProps) {
     return (
       <div className="bg-white rounded-lg border p-4">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">
-          📋 Tabela Financeira por Município
+          Tabela Financeira por Município
         </h3>
         <div className="animate-pulse space-y-2">
           {[...Array(5)].map((_, i) => (
@@ -291,7 +304,7 @@ export function RuralFinancialTable({ filters }: RuralChartProps) {
     return (
       <div className="bg-white rounded-lg border p-4">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">
-          📋 Tabela Financeira por Município
+          Tabela Financeira por Município
         </h3>
         <div className="text-center py-8 text-red-600">
           Erro ao carregar dados financeiros
@@ -304,7 +317,7 @@ export function RuralFinancialTable({ filters }: RuralChartProps) {
     return (
       <div className="bg-white rounded-lg border p-4">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">
-          📋 Tabela Financeira por Município
+          Tabela Financeira por Município
         </h3>
         <div className="text-center py-8 text-gray-500">
           Nenhum dado financeiro disponível
@@ -360,7 +373,7 @@ export function RuralFinancialTable({ filters }: RuralChartProps) {
     <div className="bg-white rounded-lg border p-4">
       <div className="flex justify-between items-center mb-4">
         <h3 className="text-lg font-semibold text-gray-900">
-          📋 Resumo Financeiro por Estado
+          Resumo Financeiro por Estado
         </h3>
         <div className="text-sm text-gray-500">
           {data.data.length} municípios • {groupedData.length} estados
@@ -409,7 +422,7 @@ export function RuralFinancialTable({ filters }: RuralChartProps) {
                   </div>
                   <div className="text-center">
                     <div className="font-medium text-gray-900">
-                      R$ {(stateGroup.totals.investment / 1e6).toFixed(1)}M
+                      {formatCurrencyTable(stateGroup.totals.investment)}
                     </div>
                     <div className="text-gray-500">Investimento</div>
                   </div>
@@ -461,7 +474,7 @@ export function RuralFinancialTable({ filters }: RuralChartProps) {
                               {row.total_uh_contratadas?.toLocaleString('pt-BR')}
                             </td>
                             <td className="px-4 py-2 text-sm text-gray-600">
-                              R$ {(row.total_investimento / 1e6)?.toFixed(1)}M
+                              {formatCurrencyTable(row.total_investimento)}
                             </td>
                             <td className="px-4 py-2 text-sm text-gray-600">
                               R$ {row.investimento_medio_uh?.toLocaleString('pt-BR')}

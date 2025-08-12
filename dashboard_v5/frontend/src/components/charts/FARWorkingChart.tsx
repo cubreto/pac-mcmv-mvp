@@ -6,6 +6,7 @@
 import { useMemo } from 'react'
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, Legend } from 'recharts'
 import { useFARRegionStatusChart } from '../../api/hooks'
+import { getStatusColor } from '../../constants/statusColors'
 
 interface FARWorkingChartProps {
   filters?: {
@@ -15,11 +16,6 @@ interface FARWorkingChartProps {
     status?: string
   }
 }
-
-// STATUS_COLORS from original component
-const STATUS_COLORS = [
-  '#009688', '#00796B', '#4DB6AC', '#26A69A', '#80CBC4', '#B2DFDB'
-]
 
 export default function FARWorkingChart({ filters }: FARWorkingChartProps) {
   // Hook called unconditionally at top
@@ -69,7 +65,7 @@ export default function FARWorkingChart({ filters }: FARWorkingChartProps) {
   if (error) {
     return (
       <div className="h-64 flex items-center justify-center bg-red-50 rounded-lg">
-        <p className="text-red-600">❌ Chart Error: {error.message}</p>
+        <p className="text-red-600">❌ Erro no gráfico: {error.message}</p>
       </div>
     )
   }
@@ -77,7 +73,7 @@ export default function FARWorkingChart({ filters }: FARWorkingChartProps) {
   if (!chartData.length) {
     return (
       <div className="h-64 flex items-center justify-center bg-gray-50 rounded-lg">
-        <p className="text-gray-500">No chart data available</p>
+        <p className="text-gray-500">Nenhum dado disponível para o gráfico</p>
       </div>
     )
   }
@@ -107,12 +103,12 @@ export default function FARWorkingChart({ filters }: FARWorkingChartProps) {
             }}
           />
           <Legend />
-          {statusValues.map((status, index) => (
+          {statusValues.map((status) => (
             <Bar 
               key={status}
               dataKey={status}
               stackId="uh"
-              fill={STATUS_COLORS[index % STATUS_COLORS.length]}
+              fill={getStatusColor(status)}
             />
           ))}
         </BarChart>

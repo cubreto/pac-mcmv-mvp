@@ -19,6 +19,28 @@ interface FDSTimelineChartProps {
 // Timeline color
 const TIMELINE_COLOR = '#009688'
 
+// Helper function to format month for display
+function formatMonth(dateString: string): string {
+  try {
+    const date = new Date(dateString)
+    if (isNaN(date.getTime())) {
+      return dateString // Return original if invalid
+    }
+    
+    const monthNames = [
+      'Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun',
+      'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'
+    ]
+    
+    // Use UTC methods to avoid timezone issues
+    const month = date.getUTCMonth()
+    const year = date.getUTCFullYear()
+    return `${monthNames[month]}/${year.toString().slice(-2)}`
+  } catch (error) {
+    return dateString
+  }
+}
+
 export default function FDSTimelineChart({ filters }: FDSTimelineChartProps) {
   // Hook called unconditionally at top
   const { data, isLoading, error } = useFDSTimelineChart(filters)
@@ -28,23 +50,10 @@ export default function FDSTimelineChart({ filters }: FDSTimelineChartProps) {
     if (!data?.data?.length) return []
     
     return data.data.map((item: any) => {
-      try {
-        // Try to format the date/month properly
-        const date = new Date(item.delivery_month || item.month || item.date)
-        return {
-          month: date.toLocaleDateString('pt-BR', { 
-            year: 'numeric', 
-            month: 'short' 
-          }),
-          total_uh: Number(item.total_uh) || 0,
-          originalData: item
-        }
-      } catch (error) {
-        return {
-          month: item.delivery_month || item.month || 'Data Inválida',
-          total_uh: Number(item.total_uh) || 0,
-          originalData: item
-        }
+      return {
+        month: formatMonth(item.delivery_month || item.month || item.date),
+        total_uh: Number(item.total_uh) || 0,
+        originalData: item
       }
     })
   }, [data])

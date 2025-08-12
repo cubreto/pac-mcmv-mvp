@@ -52,7 +52,7 @@ export function DeliveryForecastChart({ data, type }: DeliveryForecastChartProps
   return (
     <div className="bg-white rounded-lg shadow p-6">
       <h4 className="text-lg font-medium text-gray-900 mb-4 flex items-center">
-        📈 {type === 'timeline' ? 'Entregas por Mês' : 'Entregas Acumuladas'}
+        📈 {type === 'timeline' ? 'Conclusão de Obras por Mês' : 'Conclusão de Obras Acumuladas'}
         <span className="ml-2 px-2 py-1 text-xs bg-orange-100 text-orange-800 rounded-full">
           24 Meses
         </span>
@@ -107,13 +107,14 @@ function transformDataForChart(data: DeliveryForecastDataPoint[], type: 'timelin
     monthlyData[item.ano_mes][item.programa] = item.numero_uhs
   })
 
-  // Convert to array format and sort by month
+  // Convert to array format and sort by month chronologically
   let chartData = Object.entries(monthlyData)
+    .sort(([a], [b]) => a.localeCompare(b)) // Sort by YYYY-MM format first
     .map(([mes, programData]) => ({
       mes: formatMonth(mes),
+      originalMonth: mes, // Keep original for sorting reference
       ...programData
     }))
-    .sort((a, b) => a.mes.localeCompare(b.mes))
 
   // If cumulative, calculate running totals
   if (type === 'cumulative') {

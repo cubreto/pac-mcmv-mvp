@@ -232,6 +232,8 @@ class APIClient {
     status?: string;
     state?: string;
     municipality?: string;
+    tipo?: string;
+    modalidade_proposta?: string;
   } = {}): Promise<KPIData> {
     const params = new URLSearchParams();
     
@@ -246,9 +248,17 @@ class APIClient {
   }
 
   // Regional Summary
-  async getRegionalSummary(programa?: string): Promise<RegionalSummary> {
+  async getRegionalSummary(filters: {
+    programa?: string;
+    regiao?: string;
+    state?: string;
+    municipality?: string;
+  } = {}): Promise<RegionalSummary> {
     const params = new URLSearchParams();
-    if (programa) params.append('programa', programa);
+    
+    Object.entries(filters).forEach(([key, value]) => {
+      if (value) params.append(key, value);
+    });
 
     const queryString = params.toString();
     const endpoint = `/regional${queryString ? `?${queryString}` : ''}`;
@@ -295,9 +305,18 @@ class APIClient {
   }
 
   // Delivery Forecast
-  async getDeliveryForecast(programa?: string): Promise<DeliveryForecastResponse> {
+  async getDeliveryForecast(filters?: {
+    programa?: string;
+    regiao?: string;
+    state?: string;
+    municipality?: string;
+  }): Promise<DeliveryForecastResponse> {
     const params = new URLSearchParams();
-    if (programa) params.append('programa', programa);
+    
+    if (filters?.programa) params.append('programa', filters.programa);
+    if (filters?.regiao) params.append('regiao', filters.regiao);
+    if (filters?.state) params.append('state', filters.state);
+    if (filters?.municipality) params.append('municipality', filters.municipality);
 
     const queryString = params.toString();
     const endpoint = `/delivery-forecast${queryString ? `?${queryString}` : ''}`;
@@ -308,6 +327,121 @@ class APIClient {
   // Data Quality
   async getDataQuality(): Promise<DataQuality> {
     return this.request<DataQuality>('/data-quality');
+  }
+
+  // Comprehensive Data Quality
+  async getDataQualityComprehensive(): Promise<any> {
+    return this.request<any>('/data-quality/comprehensive');
+  }
+
+  // Program-specific Data Quality
+  async getDataQualityProgram(programa: string): Promise<any> {
+    return this.request<any>(`/data-quality/programs/${programa}`);
+  }
+
+  // Dados Prioritários Data Quality
+  async getDataQualityDadosPrioritarios(): Promise<any> {
+    return this.request<any>('/data-quality/dados-prioritarios');
+  }
+
+  // Dados Prioritários Previsão de Entrega
+  async getDadosPrioritariosPrevisaoEntrega(filters?: {
+    ano_contratacao?: number;
+    mes_movimento?: number;
+    ano_movimento?: number;
+    situacao_empreendimento?: string;
+    uf?: string;
+  }): Promise<any> {
+    const params = new URLSearchParams();
+    if (filters?.ano_contratacao) params.append('ano_contratacao', filters.ano_contratacao.toString());
+    if (filters?.mes_movimento) params.append('mes_movimento', filters.mes_movimento.toString());
+    if (filters?.ano_movimento) params.append('ano_movimento', filters.ano_movimento.toString());
+    if (filters?.situacao_empreendimento) params.append('situacao_empreendimento', filters.situacao_empreendimento);
+    if (filters?.uf) params.append('uf', filters.uf);
+
+    const queryString = params.toString();
+    const endpoint = `/dados-prioritarios/previsao-entrega${queryString ? `?${queryString}` : ''}`;
+
+    return this.request<any>(endpoint);
+  }
+
+  // Quality Trends
+  async getQualityTrends(programa?: string, days: number = 30): Promise<any> {
+    const params = new URLSearchParams();
+    if (programa) params.append('programa', programa);
+    params.append('days', days.toString());
+
+    const queryString = params.toString();
+    const endpoint = `/data-quality/trends${queryString ? `?${queryString}` : ''}`;
+
+    return this.request<any>(endpoint);
+  }
+
+  // Quality Alerts
+  async getQualityAlerts(activeOnly: boolean = true): Promise<any> {
+    const params = new URLSearchParams();
+    params.append('active_only', activeOnly.toString());
+
+    const queryString = params.toString();
+    const endpoint = `/data-quality/alerts${queryString ? `?${queryString}` : ''}`;
+
+    return this.request<any>(endpoint);
+  }
+
+  // Capture Quality Snapshot
+  async captureQualitySnapshot(): Promise<any> {
+    return this.request<any>('/data-quality/snapshot', {
+      method: 'POST'
+    });
+  }
+
+  // Check Quality Alerts
+  async checkQualityAlerts(): Promise<any> {
+    return this.request<any>('/data-quality/check-alerts', {
+      method: 'POST'
+    });
+  }
+
+  // Export Quality Report
+  async exportQualityReport(format: 'excel' | 'json', filters?: {
+    programa?: string;
+    start_date?: string;
+    end_date?: string;
+  }): Promise<any> {
+    const params = new URLSearchParams();
+    if (filters?.programa) params.append('programa', filters.programa);
+    if (filters?.start_date) params.append('start_date', filters.start_date);
+    if (filters?.end_date) params.append('end_date', filters.end_date);
+
+    const queryString = params.toString();
+    const endpoint = `/data-quality/export/${format}${queryString ? `?${queryString}` : ''}`;
+
+    if (format === 'excel') {
+      // For Excel, we need to handle it differently to trigger download
+      const response = await fetch(`${this.baseURL}${endpoint}`, {
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error(`Export failed: ${response.statusText}`);
+      }
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `quality_report_${new Date().toISOString().split('T')[0]}.xlsx`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+
+      return { status: 'downloaded' };
+    } else {
+      return this.request<any>(endpoint);
+    }
   }
 
   // Configuration
@@ -324,12 +458,16 @@ class APIClient {
     state?: string;
     municipality?: string;
     status?: string;
+    tipo?: string;
+    modalidade_proposta?: string;
   }): Promise<any> {
     const params = new URLSearchParams();
     if (filters?.regiao) params.append('regiao', filters.regiao);
     if (filters?.state) params.append('state', filters.state);
     if (filters?.municipality) params.append('municipality', filters.municipality);
     if (filters?.status) params.append('status', filters.status);
+    if (filters?.tipo) params.append('tipo', filters.tipo);
+    if (filters?.modalidade_proposta) params.append('modalidade_proposta', filters.modalidade_proposta);
     
     const queryString = params.toString();
     const url = `/rural/charts/region-status${queryString ? `?${queryString}` : ''}`;
@@ -341,12 +479,16 @@ class APIClient {
     state?: string;
     municipality?: string;
     status?: string;
+    tipo?: string;
+    modalidade_proposta?: string;
   }): Promise<any> {
     const params = new URLSearchParams();
     if (filters?.regiao) params.append('regiao', filters.regiao);
     if (filters?.state) params.append('state', filters.state);
     if (filters?.municipality) params.append('municipality', filters.municipality);
     if (filters?.status) params.append('status', filters.status);
+    if (filters?.tipo) params.append('tipo', filters.tipo);
+    if (filters?.modalidade_proposta) params.append('modalidade_proposta', filters.modalidade_proposta);
     
     const queryString = params.toString();
     const url = `/rural/charts/status-donut${queryString ? `?${queryString}` : ''}`;
@@ -358,12 +500,16 @@ class APIClient {
     state?: string;
     municipality?: string;
     status?: string;
+    tipo?: string;
+    modalidade_proposta?: string;
   }): Promise<any> {
     const params = new URLSearchParams();
     if (filters?.regiao) params.append('regiao', filters.regiao);
     if (filters?.state) params.append('state', filters.state);
     if (filters?.municipality) params.append('municipality', filters.municipality);
     if (filters?.status) params.append('status', filters.status);
+    if (filters?.tipo) params.append('tipo', filters.tipo);
+    if (filters?.modalidade_proposta) params.append('modalidade_proposta', filters.modalidade_proposta);
     
     const queryString = params.toString();
     const url = `/rural/charts/timeline${queryString ? `?${queryString}` : ''}`;
@@ -375,12 +521,16 @@ class APIClient {
     state?: string;
     municipality?: string;
     status?: string;
+    tipo?: string;
+    modalidade_proposta?: string;
   }): Promise<any> {
     const params = new URLSearchParams();
     if (filters?.regiao) params.append('regiao', filters.regiao);
     if (filters?.state) params.append('state', filters.state);
     if (filters?.municipality) params.append('municipality', filters.municipality);
     if (filters?.status) params.append('status', filters.status);
+    if (filters?.tipo) params.append('tipo', filters.tipo);
+    if (filters?.modalidade_proposta) params.append('modalidade_proposta', filters.modalidade_proposta);
     
     const queryString = params.toString();
     const url = `/rural/financial-table${queryString ? `?${queryString}` : ''}`;
@@ -540,12 +690,14 @@ class APIClient {
     mes_movimento?: number;
     ano_movimento?: number;
     situacao_empreendimento?: string;
+    uf?: string;
   }): Promise<any> {
     const params = new URLSearchParams();
     if (filters?.ano_contratacao) params.append('ano_contratacao', filters.ano_contratacao.toString());
     if (filters?.mes_movimento) params.append('mes_movimento', filters.mes_movimento.toString());
     if (filters?.ano_movimento) params.append('ano_movimento', filters.ano_movimento.toString());
     if (filters?.situacao_empreendimento) params.append('situacao_empreendimento', filters.situacao_empreendimento);
+    if (filters?.uf) params.append('uf', filters.uf);
     
     const queryString = params.toString();
     const url = `/dados-prioritarios${queryString ? `?${queryString}` : ''}`;
@@ -554,6 +706,18 @@ class APIClient {
 
   async getDadosPrioritariosFilters(): Promise<any> {
     return this.request<any>('/dados-prioritarios/filters');
+  }
+
+  async getDadosPrioritariosEstadoAtual(filters?: {
+    uf?: string;
+  }): Promise<any> {
+    const params = new URLSearchParams();
+    if (filters?.uf) params.append('uf', filters.uf);
+
+    const queryString = params.toString();
+    const endpoint = `/dados-prioritarios/estado-atual${queryString ? `?${queryString}` : ''}`;
+
+    return this.request<any>(endpoint);
   }
 
   // Health Check
@@ -614,6 +778,16 @@ class APIClient {
     return this.request<FilterResponse<FilterProgram>>(endpoint);
   }
 
+  async getRuralFilters(): Promise<{
+    data: {
+      tipos: Array<{ value: string; label: string; count: number }>;
+      modalidades: Array<{ value: string; label: string; count: number }>;
+    };
+    metadata: any;
+  }> {
+    return this.request('/filters/rural');
+  }
+
   async getFilterSummary(filters: {
     region?: string;
     state?: string;
@@ -631,6 +805,54 @@ class APIClient {
     const endpoint = `/filters/summary${queryString ? `?${queryString}` : ''}`;
 
     return this.request<FilterSummaryResponse>(endpoint);
+  }
+
+  // Download Analytical Report
+  async downloadAnalyticalReport(filters: {
+    region?: string;
+    state?: string;
+    municipality?: string;
+    status?: string;
+    programa?: string;
+  } = {}): Promise<void> {
+    const params = new URLSearchParams();
+    
+    Object.entries(filters).forEach(([key, value]) => {
+      if (value) params.append(key, value);
+    });
+
+    const queryString = params.toString();
+    const endpoint = `/export/analytical-report${queryString ? `?${queryString}` : ''}`;
+
+    try {
+      const response = await fetch(`${this.baseURL}${endpoint}`, {
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error(`Export failed: ${response.statusText}`);
+      }
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      
+      // Generate filename with current date and applied filters
+      const filterSuffix = Object.keys(filters).length > 0 ? '_filtered' : '';
+      const dateStr = new Date().toISOString().split('T')[0];
+      a.download = `relacao_analitica_mcmv_${dateStr}${filterSuffix}.xlsx`;
+      
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } catch (error) {
+      console.error('Download failed:', error);
+      throw error;
+    }
   }
 }
 
@@ -666,8 +888,8 @@ export const queryKeys = {
   all: baseKeys,
   kpis: (filters?: Record<string, string>) => 
     [...baseKeys, 'kpis', filters] as const,
-  regional: (programa?: string) => 
-    [...baseKeys, 'regional', programa] as const,
+  regional: (filters?: Record<string, string>) => 
+    [...baseKeys, 'regional', filters] as const,
   temporal: (filters?: Record<string, any>) => 
     [...baseKeys, 'temporal', filters] as const,
   deliveryForecast: (programa?: string) => 

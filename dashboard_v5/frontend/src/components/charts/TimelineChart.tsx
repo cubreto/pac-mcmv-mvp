@@ -29,13 +29,22 @@ export default function TimelineChart({ filters }: TimelineChartProps) {
     
     return data.data.map((item: any) => {
       try {
-        // Try to format the date/month properly
-        const date = new Date(item.delivery_month || item.month || item.date)
+        // Parse the ISO date string and format properly
+        const dateStr = item.delivery_month || item.month || item.date
+        const date = new Date(dateStr)
+        
+        // Extract year and month correctly
+        const year = date.getUTCFullYear()
+        const month = date.getUTCMonth() // 0-indexed
+        
+        // Month names in Portuguese
+        const monthNames = [
+          'Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun',
+          'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'
+        ]
+        
         return {
-          month: date.toLocaleDateString('pt-BR', { 
-            year: 'numeric', 
-            month: 'short' 
-          }),
+          month: `${monthNames[month]}/${year.toString().slice(-2)}`,
           total_uh: Number(item.total_uh) || 0,
           originalData: item
         }

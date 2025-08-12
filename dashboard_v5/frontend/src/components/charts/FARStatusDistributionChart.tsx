@@ -6,6 +6,7 @@
 import { useMemo } from 'react'
 import { ResponsiveContainer, PieChart, Pie, Tooltip, Legend } from 'recharts'
 import { useFARStatusDonutChart } from '../../api/hooks'
+import { getStatusColor } from '../../constants/statusColors'
 
 interface FARStatusDistributionChartProps {
   filters?: {
@@ -16,9 +17,6 @@ interface FARStatusDistributionChartProps {
   }
 }
 
-// Simple colors array
-const STATUS_COLORS = ['#009688', '#00796B', '#4DB6AC', '#26A69A', '#80CBC4']
-
 export default function FARStatusDistributionChart({ filters }: FARStatusDistributionChartProps) {
   // Hook called unconditionally at top
   const { data, isLoading, error } = useFARStatusDonutChart(filters)
@@ -27,10 +25,10 @@ export default function FARStatusDistributionChart({ filters }: FARStatusDistrib
   const chartData = useMemo(() => {
     if (!data?.data?.length) return []
     
-    return data.data.map((item: any, index: number) => ({
+    return data.data.map((item: any) => ({
       name: item.status || 'Sem Status',
       value: Number(item.total_uh) || 0,
-      fill: STATUS_COLORS[index % STATUS_COLORS.length]
+      fill: getStatusColor(item.status || 'Sem Status')
     }))
   }, [data])
 

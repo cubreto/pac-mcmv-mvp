@@ -30,6 +30,8 @@ export function useKPIs(
     status?: string;
     state?: string;
     municipality?: string;
+    tipo?: string;
+    modalidade_proposta?: string;
   } = {},
   options?: UseQueryOptions<KPIData>
 ) {
@@ -43,12 +45,17 @@ export function useKPIs(
 
 // Regional Summary Hook
 export function useRegionalSummary(
-  programa?: string,
+  filters: {
+    programa?: string;
+    regiao?: string;
+    state?: string;
+    municipality?: string;
+  } = {},
   options?: UseQueryOptions<RegionalSummary>
 ) {
   return useQuery({
-    queryKey: queryKeys.regional(programa),
-    queryFn: () => apiClient.getRegionalSummary(programa),
+    queryKey: queryKeys.regional(filters),
+    queryFn: () => apiClient.getRegionalSummary(filters),
     staleTime: 30 * 60 * 1000, // 30 minutes for regional data
     ...options,
   });
@@ -92,12 +99,17 @@ export function useTemporalTrends(
 
 // Delivery Forecast Hook
 export function useDeliveryForecast(
-  programa?: string,
+  filters?: {
+    programa?: string;
+    regiao?: string;
+    state?: string;
+    municipality?: string;
+  },
   options?: UseQueryOptions<DeliveryForecastResponse>
 ) {
   return useQuery({
-    queryKey: queryKeys.deliveryForecast(programa),
-    queryFn: () => apiClient.getDeliveryForecast(programa),
+    queryKey: ['delivery-forecast', filters],
+    queryFn: () => apiClient.getDeliveryForecast(filters),
     staleTime: 30 * 60 * 1000, // 30 minutes for forecast data
     ...options,
   });
@@ -115,12 +127,96 @@ export function useDataQuality(
   });
 }
 
+// Comprehensive Data Quality Hook
+export function useDataQualityComprehensive(
+  options?: UseQueryOptions<any>
+) {
+  return useQuery({
+    queryKey: ['mcmv', 'data-quality', 'comprehensive'],
+    queryFn: () => apiClient.getDataQualityComprehensive(),
+    staleTime: 30 * 60 * 1000, // 30 minutes for comprehensive data
+    ...options,
+  });
+}
+
+// Program-specific Data Quality Hook
+export function useDataQualityProgram(
+  programa: string,
+  options?: UseQueryOptions<any>
+) {
+  return useQuery({
+    queryKey: ['mcmv', 'data-quality', 'program', programa],
+    queryFn: () => apiClient.getDataQualityProgram(programa),
+    staleTime: 30 * 60 * 1000, // 30 minutes for program data
+    enabled: !!programa,
+    ...options,
+  });
+}
+
+// Dados Prioritários Data Quality Hook
+export function useDataQualityDadosPrioritarios(
+  options?: UseQueryOptions<any>
+) {
+  return useQuery({
+    queryKey: ['mcmv', 'data-quality', 'dados-prioritarios'],
+    queryFn: () => apiClient.getDataQualityDadosPrioritarios(),
+    staleTime: 30 * 60 * 1000, // 30 minutes for dados prioritarios
+    ...options,
+  });
+}
+
+// Dados Prioritários Previsão de Entrega Hook
+export function useDadosPrioritariosPrevisaoEntrega(
+  filters?: {
+    ano_contratacao?: number;
+    mes_movimento?: number;
+    ano_movimento?: number;
+    situacao_empreendimento?: string;
+    uf?: string;
+  },
+  options?: UseQueryOptions<any>
+) {
+  return useQuery({
+    queryKey: ['mcmv', 'dados-prioritarios', 'previsao-entrega', filters],
+    queryFn: () => apiClient.getDadosPrioritariosPrevisaoEntrega(filters),
+    staleTime: 30 * 60 * 1000, // 30 minutes for delivery forecast data
+    ...options,
+  });
+}
+
+// Quality Trends Hook
+export function useQualityTrends(
+  programa?: string,
+  days: number = 30,
+  options?: UseQueryOptions<any>
+) {
+  return useQuery({
+    queryKey: ['mcmv', 'data-quality', 'trends', programa, days],
+    queryFn: () => apiClient.getQualityTrends(programa, days),
+    staleTime: 10 * 60 * 1000, // 10 minutes for trends
+    ...options,
+  });
+}
+
+// Quality Alerts Hook
+export function useQualityAlerts(
+  activeOnly: boolean = true,
+  options?: UseQueryOptions<any>
+) {
+  return useQuery({
+    queryKey: ['mcmv', 'data-quality', 'alerts', activeOnly],
+    queryFn: () => apiClient.getQualityAlerts(activeOnly),
+    staleTime: 5 * 60 * 1000, // 5 minutes for alerts
+    ...options,
+  });
+}
+
 // ================================================
 // RURAL-SPECIFIC HOOKS
 // ================================================
 
 export function useRuralRegionStatusChart(
-  filters?: { regiao?: string; state?: string; municipality?: string; status?: string },
+  filters?: { regiao?: string; state?: string; municipality?: string; status?: string; tipo?: string; modalidade_proposta?: string },
   options?: UseQueryOptions<any>
 ) {
   return useQuery({
@@ -131,7 +227,9 @@ export function useRuralRegionStatusChart(
       filters?.regiao,
       filters?.state,
       filters?.municipality,
-      filters?.status
+      filters?.status,
+      filters?.tipo,
+      filters?.modalidade_proposta
     ],
     queryFn: () => apiClient.getRuralRegionStatusChart(filters),
     staleTime: 5 * 60 * 1000, // 5 minutes for chart data
@@ -142,7 +240,7 @@ export function useRuralRegionStatusChart(
 }
 
 export function useRuralStatusDonutChart(
-  filters?: { regiao?: string; state?: string; municipality?: string; status?: string },
+  filters?: { regiao?: string; state?: string; municipality?: string; status?: string; tipo?: string; modalidade_proposta?: string },
   options?: UseQueryOptions<any>
 ) {
   return useQuery({
@@ -156,7 +254,7 @@ export function useRuralStatusDonutChart(
 }
 
 export function useRuralTimelineChart(
-  filters?: { regiao?: string; state?: string; municipality?: string; status?: string },
+  filters?: { regiao?: string; state?: string; municipality?: string; status?: string; tipo?: string; modalidade_proposta?: string },
   options?: UseQueryOptions<any>
 ) {
   return useQuery({
@@ -170,7 +268,7 @@ export function useRuralTimelineChart(
 }
 
 export function useRuralFinancialTable(
-  filters?: { regiao?: string; state?: string; municipality?: string; status?: string },
+  filters?: { regiao?: string; state?: string; municipality?: string; status?: string; tipo?: string; modalidade_proposta?: string },
   options?: UseQueryOptions<any>
 ) {
   return useQuery({
@@ -338,7 +436,10 @@ export function useDashboardData(
   } = {}
 ) {
   const kpis = useKPIs(filters);
-  const regional = useRegionalSummary(filters.programa);
+  const regional = useRegionalSummary({
+    programa: filters.programa,
+    regiao: filters.regiao
+  });
   const temporal = useTemporalTrends({
     programa: filters.programa, 
     regiao: filters.regiao, 
@@ -386,7 +487,8 @@ export function useDadosPrioritarios(
   return useQuery({
     queryKey: ['dados-prioritarios', filters],
     queryFn: () => apiClient.getDadosPrioritarios(filters),
-    staleTime: 10 * 60 * 1000, // 10 minutes for historical data
+    staleTime: 5 * 60 * 1000, // 5 minutes for historical data
+    gcTime: 10 * 60 * 1000, // Keep in cache for 10 minutes
     ...options,
   });
 }
@@ -398,6 +500,21 @@ export function useDadosPrioritariosFilters(
     queryKey: ['dados-prioritarios', 'filters'],
     queryFn: () => apiClient.getDadosPrioritariosFilters(),
     staleTime: 60 * 60 * 1000, // 1 hour for filter options
+    ...options,
+  });
+}
+
+export function useDadosPrioritariosEstadoAtual(
+  filters?: {
+    uf?: string;
+  },
+  options?: UseQueryOptions<any>
+) {
+  return useQuery({
+    queryKey: ['dados-prioritarios', 'estado-atual', filters],
+    queryFn: () => apiClient.getDadosPrioritariosEstadoAtual(filters),
+    staleTime: 5 * 60 * 1000, // 5 minutes for snapshot data
+    gcTime: 10 * 60 * 1000, // Keep in cache for 10 minutes
     ...options,
   });
 }
@@ -471,6 +588,24 @@ export function usePrograms(
     queryFn: () => apiClient.getPrograms(region, state, municipality),
     staleTime: 30 * 60 * 1000, // 30 minutes for programs
     enabled: true, // Always enabled - filters applied server-side
+    ...options,
+  });
+}
+
+// RURAL Filters Hook
+export function useRuralFilters(
+  options?: UseQueryOptions<{
+    data: {
+      tipos: Array<{ value: string; label: string; count: number }>;
+      modalidades: Array<{ value: string; label: string; count: number }>;
+    };
+    metadata: any;
+  }>
+) {
+  return useQuery({
+    queryKey: ['filters', 'rural'],
+    queryFn: () => apiClient.getRuralFilters(),
+    staleTime: 60 * 60 * 1000, // 1 hour for RURAL filters (relatively static)
     ...options,
   });
 }

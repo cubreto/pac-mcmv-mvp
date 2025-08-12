@@ -116,7 +116,9 @@ class DatabaseManager:
                           regiao: Optional[str] = None,
                           status: Optional[str] = None,
                           state: Optional[str] = None,
-                          municipality: Optional[str] = None) -> Dict[str, Any]:
+                          municipality: Optional[str] = None,
+                          tipo: Optional[str] = None,
+                          modalidade_proposta: Optional[str] = None) -> Dict[str, Any]:
         """Get KPI data from materialized view with smart caching"""
         
         # For KPIs we'll query directly from mcmv_v2.projetos since we need geographic filters
@@ -189,6 +191,15 @@ class DatabaseManager:
             elif status == 'concluida':
                 query += " AND pc_obra_realizada >= 100"
         
+        # RURAL-specific filters
+        if tipo:
+            query += " AND tipo = :tipo"
+            params['tipo'] = tipo
+            
+        if modalidade_proposta:
+            query += " AND modalidade_proposta = :modalidade_proposta"
+            params['modalidade_proposta'] = modalidade_proposta
+        
         start_time = time.time()
         data = await self.execute_query(query, params)
         execution_time = time.time() - start_time
@@ -210,7 +221,13 @@ class DatabaseManager:
                          state=state, municipality=municipality)
             return self._get_empty_kpi_response()
     
-    async def get_regional_summary(self, programa: Optional[str] = None) -> List[Dict[str, Any]]:
+    async def get_regional_summary(
+        self, 
+        programa: Optional[str] = None,
+        regiao: Optional[str] = None,
+        state: Optional[str] = None,
+        municipality: Optional[str] = None
+    ) -> List[Dict[str, Any]]:
         """Get regional summary with detailed financial breakdown"""
         
         # Skip materialized view refresh for this query since we're querying mcmv_v2.projetos directly
@@ -266,6 +283,30 @@ class DatabaseManager:
             query += " AND programa = :programa"
             params['programa'] = programa
             
+        if regiao:
+            # Add region filter using the same CASE logic
+            query += " AND CASE sg_uf " \
+                     "WHEN 'AC' THEN 'Norte' WHEN 'AP' THEN 'Norte' WHEN 'AM' THEN 'Norte' " \
+                     "WHEN 'PA' THEN 'Norte' WHEN 'RO' THEN 'Norte' WHEN 'RR' THEN 'Norte' WHEN 'TO' THEN 'Norte' " \
+                     "WHEN 'AL' THEN 'Nordeste' WHEN 'BA' THEN 'Nordeste' WHEN 'CE' THEN 'Nordeste' " \
+                     "WHEN 'MA' THEN 'Nordeste' WHEN 'PB' THEN 'Nordeste' WHEN 'PE' THEN 'Nordeste' " \
+                     "WHEN 'PI' THEN 'Nordeste' WHEN 'RN' THEN 'Nordeste' WHEN 'SE' THEN 'Nordeste' " \
+                     "WHEN 'DF' THEN 'Centro-Oeste' WHEN 'GO' THEN 'Centro-Oeste' " \
+                     "WHEN 'MT' THEN 'Centro-Oeste' WHEN 'MS' THEN 'Centro-Oeste' " \
+                     "WHEN 'ES' THEN 'Sudeste' WHEN 'MG' THEN 'Sudeste' " \
+                     "WHEN 'RJ' THEN 'Sudeste' WHEN 'SP' THEN 'Sudeste' " \
+                     "WHEN 'PR' THEN 'Sul' WHEN 'RS' THEN 'Sul' WHEN 'SC' THEN 'Sul' " \
+                     "ELSE 'Outros' END = :regiao"
+            params['regiao'] = regiao
+            
+        if state:
+            query += " AND sg_uf = :state"
+            params['state'] = state
+            
+        if municipality:
+            query += " AND no_municipio = :municipality"
+            params['municipality'] = municipality
+            
         query += """
         GROUP BY regiao
         ORDER BY SUM(vr_total_investimento) DESC
@@ -277,6 +318,9 @@ class DatabaseManager:
         
         logger.info("Regional summary retrieved",
                    programa=programa,
+                   regiao=regiao,
+                   state=state,
+                   municipality=municipality,
                    execution_time=f"{execution_time:.3f}s",
                    regions_count=len(data),
                    source="materialized_view")
@@ -288,7 +332,9 @@ class DatabaseManager:
                                 state: Optional[str] = None,
                                 municipality: Optional[str] = None,
                                 status: Optional[str] = None,
-                                programa: Optional[str] = None) -> List[Dict[str, Any]]:
+                                programa: Optional[str] = None,
+                                tipo: Optional[str] = None,
+                                modalidade_proposta: Optional[str] = None) -> List[Dict[str, Any]]:
         """Get program summary with detailed financial breakdown and execution status"""
         
         # Query from mcmv_v2.projetos to get program-level data similar to regional
@@ -363,6 +409,15 @@ class DatabaseManager:
                 query += " AND pc_obra_realizada > 0 AND pc_obra_realizada < 100"
             elif status == 'concluida':
                 query += " AND pc_obra_realizada >= 100"
+        
+        # RURAL-specific filters
+        if tipo:
+            query += " AND tipo = :tipo"
+            params['tipo'] = tipo
+            
+        if modalidade_proposta:
+            query += " AND modalidade_proposta = :modalidade_proposta"
+            params['modalidade_proposta'] = modalidade_proposta
         
         # Add program filter (this will override the default FAR/FDS/RURAL filter)
         if programa:
@@ -457,8 +512,12 @@ class DatabaseManager:
         
         return data
     
-    async def get_delivery_forecast(self, programa: Optional[str] = None) -> List[Dict[str, Any]]:
-        """Get delivery forecast data from FAR, FDS, RURAL programs using dt_previsao_conclusao_obra"""
+    async def get_delivery_forecast(self, 
+                                    programa: Optional[str] = None,
+                                    regiao: Optional[str] = None,
+                                    state: Optional[str] = None,
+                                    municipality: Optional[str] = None) -> List[Dict[str, Any]]:
+        """Get delivery forecast data from FAR, FDS, RURAL programs using dt_previsao_conclusao_obra with full filter support"""
         
         await self._check_and_refresh_materialized_views()
         
@@ -481,6 +540,28 @@ class DatabaseManager:
             query += " AND programa = :programa"
             params['programa'] = programa
         
+        if regiao:
+            # Map region to states
+            region_states = {
+                'Norte': ['AC', 'AP', 'AM', 'PA', 'RO', 'RR', 'TO'],
+                'Nordeste': ['AL', 'BA', 'CE', 'MA', 'PB', 'PE', 'PI', 'RN', 'SE'],
+                'Centro-Oeste': ['DF', 'GO', 'MT', 'MS'],
+                'Sudeste': ['ES', 'MG', 'RJ', 'SP'],
+                'Sul': ['PR', 'RS', 'SC']
+            }
+            if regiao in region_states:
+                query += f" AND sg_uf IN ({','.join([':state_' + str(i) for i in range(len(region_states[regiao]))])})"
+                for i, uf in enumerate(region_states[regiao]):
+                    params[f'state_{i}'] = uf
+            
+        if state:
+            query += " AND sg_uf = :state"
+            params['state'] = state
+            
+        if municipality:
+            query += " AND no_municipio = :municipality"
+            params['municipality'] = municipality
+        
         query += """
         GROUP BY programa, ano_mes
         ORDER BY ano_mes, programa
@@ -490,6 +571,9 @@ class DatabaseManager:
         
         logger.info("Delivery forecast retrieved from real database", 
                    programa=programa,
+                   regiao=regiao,
+                   state=state,
+                   municipality=municipality,
                    forecast_points=len(data),
                    source="mcmv_v2.projetos.dt_previsao_conclusao_obra (FAR/FDS/RURAL)")
         
@@ -516,16 +600,52 @@ class DatabaseManager:
     async def _refresh_materialized_views(self):
         """Refresh all materialized views"""
         
-        refresh_query = "SELECT mcmv_v2.refresh_all_materialized_views()"
-        
-        start_time = time.time()
-        result = await self.execute_query(refresh_query)
-        refresh_time = time.time() - start_time
-        
-        if result:
-            logger.info("Materialized views refresh completed",
-                       refresh_time=f"{refresh_time:.3f}s",
-                       result=result[0])
+        try:
+            # First check if the function exists
+            check_query = """
+            SELECT EXISTS (
+                SELECT 1 
+                FROM pg_proc p
+                JOIN pg_namespace n ON p.pronamespace = n.oid
+                WHERE n.nspname = 'mcmv_v2' 
+                AND p.proname = 'refresh_all_materialized_views'
+            )
+            """
+            
+            function_exists = await self.execute_query(check_query)
+            
+            if not function_exists or not function_exists[0].get('exists', False):
+                logger.warning("Function mcmv_v2.refresh_all_materialized_views() does not exist. "
+                             "Please run migration script 002_create_refresh_function.sql")
+                return
+            
+            # Execute the refresh function
+            refresh_query = "SELECT * FROM mcmv_v2.refresh_all_materialized_views()"
+            
+            start_time = time.time()
+            result = await self.execute_query(refresh_query)
+            refresh_time = time.time() - start_time
+            
+            if result:
+                logger.info("Materialized views refresh completed",
+                           refresh_time=f"{refresh_time:.3f}s",
+                           views_refreshed=len(result))
+                
+                # Log details of each view refresh
+                for view_result in result:
+                    if 'ERROR' in view_result.get('refresh_status', ''):
+                        logger.error("Materialized view refresh failed",
+                                   view=view_result.get('view_name'),
+                                   status=view_result.get('refresh_status'))
+                    else:
+                        logger.debug("Materialized view refreshed",
+                                   view=view_result.get('view_name'),
+                                   status=view_result.get('refresh_status'),
+                                   time=view_result.get('refresh_time'))
+                           
+        except Exception as e:
+            logger.error("Failed to refresh materialized views", error=str(e))
+            # Don't raise - allow application to continue without refresh
     
     def _get_empty_kpi_response(self) -> Dict[str, Any]:
         """Get empty KPI response structure"""

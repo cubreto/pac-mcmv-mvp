@@ -9,9 +9,9 @@ import { useKPIs, useRegionalSummary, useDeliveryForecast, useProgramSummary } f
 import { KPISkeleton, ChartSkeleton } from '../components/LoadingSpinner'
 import RegionalChart from '../components/charts/RegionalChart'
 import ProgramChart from '../components/charts/ProgramChart'
-import PerformanceMetrics from '../components/charts/PerformanceMetrics'
 import DeliveryForecastChart from '../components/charts/DeliveryForecastChart'
 import { useGlobalFilters } from '../contexts/FilterContext'
+import { formatCurrencyDashboard } from '../utils/formatters'
 
 export default function Dashboard() {
   const [activeTab, setActiveTab] = useState('regiao')
@@ -25,64 +25,58 @@ export default function Dashboard() {
     municipality: filters.municipality
   })
   
-  const { data: regional, isLoading: regionalLoading, error: regionalError } = useRegionalSummary(filters.programa)
+  const { data: regional, isLoading: regionalLoading, error: regionalError } = useRegionalSummary({
+    programa: filters.programa,
+    regiao: filters.region,
+    state: filters.state,
+    municipality: filters.municipality
+  })
   const { data: programs, isLoading: programsLoading, error: programsError } = useProgramSummary({
     regiao: filters.region,
     state: filters.state,
     municipality: filters.municipality,
     programa: filters.programa
   })
-  const { data: deliveryForecast, isLoading: forecastLoading, error: forecastError } = useDeliveryForecast(filters.programa)
+  const { data: deliveryForecast, isLoading: forecastLoading, error: forecastError } = useDeliveryForecast({
+    programa: filters.programa,
+    regiao: filters.region,
+    state: filters.state,
+    municipality: filters.municipality
+  })
 
   const tabs = [
-    { id: 'regiao', label: 'Por Região', icon: '🌎' },
-    { id: 'programa', label: 'Por Programa', icon: '🏗️' },
-    { id: 'previsao', label: 'Previsão de Entregas', icon: '🎯' },
-    { id: 'performance', label: 'Performance', icon: '⚡' },
+    { id: 'regiao', label: 'Por Região' },
+    { id: 'programa', label: 'Por Programa' },
+    { id: 'previsao', label: 'Previsão de Entregas' },
   ]
 
   return (
     <div className="space-y-8">
-      {/* Header */}
-      <div className="bg-gradient-to-r from-blue-600 to-blue-800 rounded-lg shadow-lg p-8 text-white">
-        <h1 className="text-3xl font-bold mb-2">
-          📊 MCMV Dashboard - Resumo Executivo
-        </h1>
-        <p className="text-blue-100">
-          Painel de controle para análise dos programas habitacionais MCMV
-        </p>
-        <div className="mt-4 flex items-center space-x-6 text-sm">
-          <div className="flex items-center">
-            <div className="w-3 h-3 bg-green-400 rounded-full mr-2"></div>
-            <span>v5 - Alta Performance</span>
-          </div>
-          <div className="flex items-center">
-            <div className="w-3 h-3 bg-blue-400 rounded-full mr-2"></div>
-            <span>Dados em Tempo Real</span>
-          </div>
-          <div className="flex items-center">
-            <div className="w-3 h-3 bg-purple-400 rounded-full mr-2"></div>
-            <span>Materialized Views</span>
-          </div>
-        </div>
-      </div>
 
 
       {/* KPI Cards */}
       <div>
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-xl font-semibold text-gray-900">
-            📈 Indicadores Principais
+            Indicadores Principais
           </h2>
           
-          {Object.keys(filters).length > 0 && (
-            <div className="flex items-center space-x-2 text-sm">
-              <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-              <span className="text-blue-600 font-medium">
-                {Object.keys(filters).length} filtro(s) aplicado(s)
+          <div className="flex items-center space-x-4">
+            {kpis?.data_atualizacao && (
+              <span className="text-sm text-gray-500">
+                Posição: {new Date(kpis.data_atualizacao).toLocaleDateString('pt-BR')}
               </span>
-            </div>
-          )}
+            )}
+            
+            {Object.keys(filters).length > 0 && (
+              <div className="flex items-center space-x-2 text-sm">
+                <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                <span className="text-blue-600 font-medium">
+                  {Object.keys(filters).length} filtro(s) aplicado(s)
+                </span>
+              </div>
+            )}
+          </div>
         </div>
         
         {kpisLoading ? (
@@ -92,7 +86,7 @@ export default function Dashboard() {
             <p className="text-red-800">Erro ao carregar KPIs: {kpisError.message}</p>
           </div>
         ) : kpis ? (
-          <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <KPICard
               title="Total Projetos"
               value={kpis.total_projetos.toLocaleString('pt-BR')}
@@ -107,15 +101,9 @@ export default function Dashboard() {
             />
             <KPICard
               title="Investimento Total"
-              value={`R$ ${(kpis.total_investimento / 1e9).toFixed(1)}bi`}
+              value={formatCurrencyDashboard(kpis.total_investimento)}
               subtitle="Valor investido"
               color="purple"
-            />
-            <KPICard
-              title="Execução Média"
-              value={`${kpis.percentual_execucao_medio.toFixed(1)}%`}
-              subtitle="Progresso físico"
-              color="orange"
             />
             <KPICard
               title="Em Execução"
@@ -141,7 +129,6 @@ export default function Dashboard() {
                     : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                 } whitespace-nowrap py-4 px-6 border-b-2 font-medium text-sm transition-colors duration-200 flex items-center`}
               >
-                <span className="mr-2 text-lg">{tab.icon}</span>
                 {tab.label}
               </button>
             ))}
@@ -152,10 +139,6 @@ export default function Dashboard() {
         <div className="p-6">
           {activeTab === 'regiao' && (
             <div>
-              <h2 className="text-xl font-semibold text-gray-900 mb-6">
-                🌎 Análise Regional
-              </h2>
-              
               {regionalLoading ? (
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                   <ChartSkeleton />
@@ -173,10 +156,6 @@ export default function Dashboard() {
 
           {activeTab === 'programa' && (
             <div>
-              <h2 className="text-xl font-semibold text-gray-900 mb-6">
-                🏗️ Análise por Programa
-              </h2>
-              
               {programsLoading ? (
                 <div className="space-y-6">
                   <ChartSkeleton />
@@ -197,7 +176,7 @@ export default function Dashboard() {
                   {/* Execution Status */}
                   <div className="mt-8">
                     <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                      🚧 Status de Execução
+                      Status de Execução
                     </h3>
                     <ProgramChart 
                       data={programs.data}
@@ -212,7 +191,7 @@ export default function Dashboard() {
           {activeTab === 'previsao' && (
             <div>
               <h2 className="text-xl font-semibold text-gray-900 mb-6">
-                🎯 Previsão de Entregas por Programa
+                Previsão de Conclusão de Obras por Programa
               </h2>
               
               {forecastLoading ? (
@@ -228,23 +207,17 @@ export default function Dashboard() {
                 <div className="space-y-8">
                   {/* Summary Metrics */}
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-center">
-                      <div className="text-2xl font-bold text-blue-700">
-                        📅 {deliveryForecast.summary.total_months}
-                      </div>
-                      <div className="text-sm text-blue-600">Meses com Entregas</div>
+                    <div className="bg-white rounded-lg p-4 border-l-4 border-blue-500 shadow-sm">
+                      <p className="text-sm text-gray-600">Meses com Entregas</p>
+                      <p className="text-2xl font-bold text-gray-900">{deliveryForecast.summary.total_months}</p>
                     </div>
-                    <div className="bg-green-50 border border-green-200 rounded-lg p-4 text-center">
-                      <div className="text-2xl font-bold text-green-700">
-                        🏠 {deliveryForecast.summary.total_uh_forecast.toLocaleString('pt-BR')}
-                      </div>
-                      <div className="text-sm text-green-600">Total UH Previstas</div>
+                    <div className="bg-white rounded-lg p-4 border-l-4 border-green-500 shadow-sm">
+                      <p className="text-sm text-gray-600">Total UH - Conclusão de Obra</p>
+                      <p className="text-2xl font-bold text-gray-900">{deliveryForecast.summary.total_uh_forecast.toLocaleString('pt-BR')}</p>
                     </div>
-                    <div className="bg-orange-50 border border-orange-200 rounded-lg p-4 text-center">
-                      <div className="text-2xl font-bold text-orange-700">
-                        📈 {deliveryForecast.summary.peak_month}
-                      </div>
-                      <div className="text-sm text-orange-600">Pico de Entregas</div>
+                    <div className="bg-white rounded-lg p-4 border-l-4 border-orange-500 shadow-sm">
+                      <p className="text-sm text-gray-600">Pico de Entregas</p>
+                      <p className="text-2xl font-bold text-gray-900">{deliveryForecast.summary.peak_month}</p>
                     </div>
                   </div>
 
@@ -257,7 +230,7 @@ export default function Dashboard() {
                   {/* Cumulative Chart */}
                   <div className="mt-8">
                     <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                      📊 Entregas Acumuladas
+                      Entregas Acumuladas
                     </h3>
                     <DeliveryForecastChart 
                       data={deliveryForecast.data}
@@ -269,19 +242,6 @@ export default function Dashboard() {
             </div>
           )}
 
-          {activeTab === 'performance' && (
-            <div>
-              <h2 className="text-xl font-semibold text-gray-900 mb-6">
-                ⚡ Performance & Monitoramento
-              </h2>
-              
-              <PerformanceMetrics 
-                apiResponseTime={45}
-                dataFreshness="Tempo real"
-                cacheHitRate={94}
-              />
-            </div>
-          )}
         </div>
       </div>
     </div>

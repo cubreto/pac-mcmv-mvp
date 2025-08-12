@@ -18,34 +18,34 @@ export function Layout({ children }: LayoutProps) {
   const { data: config } = useConfiguration()
 
   const navigation = [
-    { name: 'Dashboard', href: '/', icon: '📊' },
+    { name: 'Resumo', href: '/', icon: '📊' },
     { name: 'RURAL', href: '/rural', icon: '🌾' },
     { name: 'FAR', href: '/far', icon: '🏗️' },
     { name: 'FDS', href: '/fds', icon: '🏘️' },
     { name: 'Dados Prioritários', href: '/dados-prioritarios', icon: '📋' },
-    { name: 'Qualidade', href: '/data-quality', icon: '📈' },
+    // { name: 'Qualidade', href: '/data-quality', icon: '📈' }, // Hidden for now
   ]
+
+  // Check if we're on Dados Prioritários page
+  const isDadosPrioritarios = location.pathname === '/dados-prioritarios'
 
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
       <header className="bg-white shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            {/* Logo */}
-            <div className="flex items-center">
-              <h1 className="text-2xl font-bold text-blue-600">
-                🏠 MCMV Dashboard v5
-              </h1>
-              {health && (
-                <span className="ml-4 px-2 py-1 text-xs bg-green-100 text-green-800 rounded-full">
-                  v{health.version}
-                </span>
-              )}
+          <div className="flex items-center h-16">
+            {/* MCMV Logo */}
+            <div className="flex items-center mr-12">
+              <img 
+                src="/mcmv-logo.png" 
+                alt="Minha Casa Minha Vida" 
+                className="h-12 w-auto"
+              />
             </div>
 
             {/* Navigation */}
-            <nav className="flex space-x-8">
+            <nav className="flex space-x-8 flex-1 justify-center">
               {navigation.map((item) => {
                 const isActive = location.pathname === item.href
                 return (
@@ -65,7 +65,7 @@ export function Layout({ children }: LayoutProps) {
               })}
             </nav>
 
-            {/* Status indicator */}
+            {/* Status indicator and Caixa Logo */}
             <div className="flex items-center space-x-4">
               {health?.status === 'healthy' ? (
                 <div className="flex items-center text-green-600">
@@ -78,18 +78,37 @@ export function Layout({ children }: LayoutProps) {
                   <span className="text-sm">Offline</span>
                 </div>
               )}
+              {/* Caixa Logo */}
+              <div className="border-l border-gray-300 pl-4 ml-4">
+                <img 
+                  src="/caixa-logo.png" 
+                  alt="Caixa Econômica Federal" 
+                  className="h-10 w-auto"
+                />
+              </div>
             </div>
           </div>
         </div>
       </header>
 
+      {/* Novo Minha Casa Minha Vida Banner - Not shown on Dados Prioritários */}
+      {!isDadosPrioritarios && (
+        <div className="bg-gradient-to-r from-blue-800 to-blue-600 text-white py-4 shadow-md">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <h2 className="text-2xl font-bold text-center">
+              Novo Minha Casa Minha Vida
+            </h2>
+            <p className="text-center text-blue-100 text-sm mt-1">
+              Programa Nacional de Habitação
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* Main content */}
       <main className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
-        {/* Global Filters Bar - Only show on Dashboard, RURAL, FAR, FDS pages */}
-        {(location.pathname === '/' || 
-          location.pathname === '/rural' || 
-          location.pathname === '/far' || 
-          location.pathname === '/fds') && (
+        {/* Global Filters Bar - Only show on Dashboard page */}
+        {location.pathname === '/' && (
           <GlobalFilters />
         )}
         
@@ -102,7 +121,7 @@ export function Layout({ children }: LayoutProps) {
         <div className="max-w-7xl mx-auto py-4 px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center text-sm text-gray-500">
             <div>
-              MCMV Dashboard v5 - High-performance housing program analytics
+              MCMV v5.0.6 - High-performance housing program analytics
             </div>
             <div className="flex items-center space-x-4">
               {config && (

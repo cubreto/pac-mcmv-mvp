@@ -1,502 +1,283 @@
 /**
  * MCMV Dashboard v5 - Dados Prioritários Page
- * Historical data analysis with simplified table view
+ * Historical data analysis with 3-tab view
  */
 
-import React, { useState } from 'react'
-import { useDadosPrioritarios, useDadosPrioritariosFilters } from '../api/hooks'
+import { useState } from 'react'
+import { 
+  useDadosPrioritarios, 
+  useDadosPrioritariosFilters, 
+  useDadosPrioritariosPrevisaoEntrega,
+  useDadosPrioritariosEstadoAtual 
+} from '../api/hooks'
+import TodosOsDadosTab from '../components/TodosOsDadosTab'
+import EstadoAtualTab from '../components/EstadoAtualTab'
+import PrevisaoEntregaTab from '../components/PrevisaoEntregaTab'
 
 interface DadosPrioritariosFilters {
   ano_contratacao?: number
   mes_movimento?: number
   ano_movimento?: number
   situacao_empreendimento?: string
+  uf?: string
 }
 
 export default function DadosPrioritariosPage() {
+  const [activeTab, setActiveTab] = useState('todos-os-dados')
   const [filters, setFilters] = useState<DadosPrioritariosFilters>({})
+  
+  // Reset month/year filters when switching to Estado Atual or Previsão de Entrega tabs
+  const handleTabChange = (tabId: string) => {
+    setActiveTab(tabId)
+    if (tabId === 'estado-atual' || tabId === 'previsao-entrega') {
+      // Clear month/year filters that don't apply to these tabs
+      setFilters(prev => {
+        const { mes_movimento, ano_movimento, ...rest } = prev
+        return rest
+      })
+    }
+  }
 
   // Get dados prioritarios data with filters
-  const { data, isLoading, error } = useDadosPrioritarios(filters)
+  const { data, isLoading, error, isFetching } = useDadosPrioritarios(filters)
   const { data: filterOptions, isLoading: filtersLoading } = useDadosPrioritariosFilters()
+  const { data: previsaoData, isLoading: previsaoLoading } = useDadosPrioritariosPrevisaoEntrega(filters)
+  
+  // Get estado atual data (May 2025 only) - only UF filter applies
+  const { data: estadoAtualData, isLoading: estadoAtualLoading, error: estadoAtualError } = useDadosPrioritariosEstadoAtual({ 
+    uf: filters.uf 
+  })
 
   const updateFilter = (key: keyof DadosPrioritariosFilters, value: number | string | undefined) => {
     setFilters(prev => ({
       ...prev,
-      [key]: value || undefined
+      [key]: value
     }))
   }
 
-  const clearFilters = () => {
-    setFilters({})
-  }
-
-  const hasActiveFilters = Object.keys(filters).length > 0
-
-  // Month names for display
-  const monthNames = [
-    'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
-    'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
-  ]
-
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       {/* Header */}
-      <div className="bg-gradient-to-r from-blue-600 to-indigo-700 rounded-lg shadow-lg p-8 text-white">
-        <h1 className="text-3xl font-bold mb-2">
-          📋 Dados Prioritários
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+        <h1 className="text-3xl font-bold text-gray-900">
+          Dados Prioritários
         </h1>
-        <p className="text-blue-100">
-          Análise detalhada dos projetos prioritários MCMV com métricas de entrega por programa e status
+        <p className="text-lg text-gray-600 mt-2">
+          Análise detalhada dos empreendimentos com dados históricos mensais
         </p>
-        <div className="mt-4 flex items-center space-x-6 text-sm">
-          <div className="flex items-center">
-            <div className="w-3 h-3 bg-green-400 rounded-full mr-2"></div>
-            <span>52,476 projetos analisados</span>
+      </div>
+
+      {/* Info Cards - Show only for Estado Atual tab */}
+      {activeTab === 'estado-atual' && (() => {
+        const summaryData = activeTab === 'estado-atual' ? estadoAtualData?.summary : data?.summary;
+        if (!summaryData) return null;
+        
+        return (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="bg-white rounded-lg p-4 border-l-4 border-blue-500 shadow-sm">
+              <p className="text-sm text-gray-600">Total de Projetos</p>
+              <p className="text-2xl font-bold text-gray-900">{summaryData.total_projetos?.toLocaleString('pt-BR')}</p>
+              <p className="text-xs text-gray-500 mt-1">
+                {activeTab === 'estado-atual' ? 'Snapshot: Maio/2025' : 'Dados: Jan/2025 - Mai/2025'}
+              </p>
+            </div>
+            <div className="bg-white rounded-lg p-4 border-l-4 border-green-500 shadow-sm">
+              <p className="text-sm text-gray-600">UH Contratadas</p>
+              <p className="text-2xl font-bold text-gray-900">{summaryData.total_uh_contratadas?.toLocaleString('pt-BR')}</p>
+            </div>
+            <div className="bg-white rounded-lg p-4 border-l-4 border-purple-500 shadow-sm">
+              <p className="text-sm text-gray-600">Taxa de Entrega</p>
+              <p className="text-2xl font-bold text-gray-900">{summaryData.overall_percentual_entregues}%</p>
+            </div>
           </div>
-          <div className="flex items-center">
-            <div className="w-3 h-3 bg-yellow-400 rounded-full mr-2"></div>
-            <span>Janeiro-Abril 2025</span>
-          </div>
+        );
+      })()}
+
+      {/* Tab Navigation */}
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+        <div className="border-b border-gray-200">
+          <nav className="-mb-px flex space-x-8 px-6" aria-label="Tabs">
+            {[
+              { id: 'todos-os-dados', name: 'Dados Históricos' },
+              { id: 'estado-atual', name: 'Estado Atual' },
+              { id: 'previsao-entrega', name: 'Previsão de Entrega' }
+            ].map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => handleTabChange(tab.id)}
+                className={`
+                  py-4 px-1 border-b-2 font-medium text-sm whitespace-nowrap
+                  ${activeTab === tab.id
+                    ? 'border-blue-500 text-blue-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  }
+                `}
+              >
+                {tab.name}
+              </button>
+            ))}
+          </nav>
         </div>
       </div>
 
       {/* Filters */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-        <div className="flex items-center justify-between mb-6">
-          <div>
+          <div className="flex items-center justify-between mb-6">
             <h3 className="text-lg font-semibold text-gray-900">
-              🔍 Filtros Específicos
+              Filtros Específicos
             </h3>
-            <p className="text-sm text-gray-600 mt-1">
-              Filtros para dados históricos prioritários
-            </p>
-          </div>
-          
-          {hasActiveFilters && (
-            <button
-              onClick={clearFilters}
-              className="px-3 py-1.5 text-sm text-red-600 hover:text-red-800 hover:bg-red-50 rounded-md transition-colors"
-            >
-              🗑️ Limpar Filtros
-            </button>
-          )}
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          {/* Ano de Contratação */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              📅 Ano de Contratação
-            </label>
-            <select
-              value={filters.ano_contratacao || ''}
-              onChange={(e) => updateFilter('ano_contratacao', e.target.value ? parseInt(e.target.value) : undefined)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
-              disabled={filtersLoading}
-            >
-              <option value="">Todos os Anos</option>
-              {filterOptions?.anos_contratacao?.map((ano: number) => (
-                <option key={ano} value={ano}>
-                  {ano}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {/* Ano de Movimento */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              📆 Ano de Movimento
-            </label>
-            <select
-              value={filters.ano_movimento || ''}
-              onChange={(e) => updateFilter('ano_movimento', e.target.value ? parseInt(e.target.value) : undefined)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
-              disabled={filtersLoading}
-            >
-              <option value="">Todos os Anos</option>
-              {filterOptions?.movimento_dates && Object.keys(filterOptions.movimento_dates).map((ano: string) => (
-                <option key={ano} value={ano}>
-                  {ano}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {/* Mês de Movimento */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              🗓️ Mês de Movimento
-            </label>
-            <select
-              value={filters.mes_movimento || ''}
-              onChange={(e) => updateFilter('mes_movimento', e.target.value ? parseInt(e.target.value) : undefined)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
-              disabled={filtersLoading || !filters.ano_movimento}
-            >
-              <option value="">Todos os Meses</option>
-              {filters.ano_movimento && 
-                filterOptions?.movimento_dates?.[filters.ano_movimento]?.map((mes: number) => (
-                  <option key={mes} value={mes}>
-                    {monthNames[mes - 1]}
-                  </option>
-                ))
-              }
-            </select>
-          </div>
-
-          {/* Situação do Empreendimento */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              📋 Situação do Empreendimento
-            </label>
-            <select
-              value={filters.situacao_empreendimento || ''}
-              onChange={(e) => updateFilter('situacao_empreendimento', e.target.value || undefined)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
-              disabled={filtersLoading}
-            >
-              <option value="">Todas as Situações</option>
-              {filterOptions?.situacoes_empreendimento?.map((situacao: string) => (
-                <option key={situacao} value={situacao}>
-                  {situacao}
-                </option>
-              ))}
-            </select>
-          </div>
-        </div>
-
-        {/* Filter Summary */}
-        {hasActiveFilters && data?.summary && (
-          <div className="border-t border-gray-200 pt-4 mt-4">
-            <div className="flex items-center space-x-4 text-sm">
-              <div className="flex items-center">
-                <div className="w-2 h-2 bg-blue-500 rounded-full mr-2"></div>
-                <span className="text-gray-600">
-                  {Object.keys(filters).length} filtro(s) ativo(s)
-                </span>
-              </div>
-              <div className="flex items-center">
-                <div className="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
-                <span className="text-gray-600">
-                  {data.summary.total_projetos?.toLocaleString('pt-BR')} projetos
-                </span>
-              </div>
-              <div className="flex items-center">
-                <div className="w-2 h-2 bg-purple-500 rounded-full mr-2"></div>
-                <span className="text-gray-600">
-                  {data.summary.total_uh_contratadas?.toLocaleString('pt-BR')} UH contratadas
-                </span>
-              </div>
-              <div className="flex items-center">
-                <div className="w-2 h-2 bg-orange-500 rounded-full mr-2"></div>
-                <span className="text-gray-600">
-                  {data.summary.overall_percentual_entregues}% entregues
-                </span>
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* Data Table */}
-      <div className="bg-white rounded-lg shadow-lg border border-gray-200">
-        <div className="px-6 py-5 border-b border-gray-200 bg-gradient-to-r from-gray-50 to-gray-100">
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="text-xl font-bold text-gray-900 flex items-center">
-                📊 Tabela de Dados Prioritários
-              </h3>
-              <p className="text-sm text-gray-600 mt-1">
-                Agrupado por programa e situação do empreendimento
-              </p>
-            </div>
-            {data?.summary && (
-              <div className="text-right">
-                <div className="text-sm text-gray-500">Total Geral</div>
-                <div className="text-lg font-bold text-gray-900">
-                  {data.summary.total_projetos?.toLocaleString('pt-BR')} projetos
-                </div>
+            {filtersLoading && (
+              <div className="flex items-center text-sm text-gray-500">
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-500 mr-2"></div>
+                Carregando filtros...
               </div>
             )}
           </div>
+
+          <div className={`grid grid-cols-1 md:grid-cols-2 ${activeTab === 'estado-atual' ? 'lg:grid-cols-3' : activeTab === 'previsao-entrega' ? 'lg:grid-cols-3' : 'lg:grid-cols-5'} gap-4`}>
+            {/* Ano de Contratação - Hidden for Previsão de Entrega */}
+            {activeTab !== 'previsao-entrega' && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Ano de Contratação
+              </label>
+              <select
+                className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                value={filters.ano_contratacao || ''}
+                onChange={(e) => updateFilter('ano_contratacao', e.target.value ? parseInt(e.target.value) : undefined)}
+              >
+                <option value="">Todos</option>
+                {filterOptions?.anos_contratacao?.map((year: number) => (
+                  <option key={year} value={year}>{year}</option>
+                ))}
+              </select>
+            </div>
+            )}
+
+            {/* Ano de Movimento - Hidden for Estado Atual and Previsão de Entrega */}
+            {activeTab !== 'estado-atual' && activeTab !== 'previsao-entrega' && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Ano de Movimento
+                </label>
+                <select
+                  className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  value={filters.ano_movimento || ''}
+                  onChange={(e) => updateFilter('ano_movimento', e.target.value ? parseInt(e.target.value) : undefined)}
+                >
+                  <option value="">Todos</option>
+                  {filterOptions?.movimento_dates && Object.keys(filterOptions.movimento_dates)
+                    .map(year => parseInt(year))
+                    .sort((a, b) => b - a)
+                    .map((year: number) => (
+                      <option key={year} value={year}>{year}</option>
+                    ))
+                  }
+                </select>
+              </div>
+            )}
+
+            {/* Mês de Movimento - Hidden for Estado Atual and Previsão de Entrega */}
+            {activeTab !== 'estado-atual' && activeTab !== 'previsao-entrega' && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Mês de Movimento
+                </label>
+                <select
+                  className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  value={filters.mes_movimento || ''}
+                  onChange={(e) => updateFilter('mes_movimento', e.target.value ? parseInt(e.target.value) : undefined)}
+                  disabled={!filters.ano_movimento}
+                >
+                  <option value="">Todos</option>
+                  {filters.ano_movimento && filterOptions?.movimento_dates?.[filters.ano_movimento]?.map((month: number) => {
+                    const monthNames = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez']
+                    return (
+                      <option key={month} value={month}>{monthNames[month - 1]}</option>
+                    )
+                  })}
+                </select>
+              </div>
+            )}
+
+            {/* Situação - Hidden for Previsão de Entrega */}
+            {activeTab !== 'previsao-entrega' && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Situação
+              </label>
+              <select
+                className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                value={filters.situacao_empreendimento || ''}
+                onChange={(e) => updateFilter('situacao_empreendimento', e.target.value || undefined)}
+              >
+                <option value="">Todas</option>
+                {filterOptions?.situacoes_empreendimento?.map((situacao: string) => (
+                  <option key={situacao} value={situacao}>{situacao}</option>
+                ))}
+              </select>
+            </div>
+            )}
+
+            {/* UF */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                UF
+              </label>
+              <select
+                className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                value={filters.uf || ''}
+                onChange={(e) => updateFilter('uf', e.target.value || undefined)}
+              >
+                <option value="">Todas</option>
+                {filterOptions?.ufs?.map((uf: string) => (
+                  <option key={uf} value={uf}>{uf}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          {/* Active Filters Summary */}
+          {Object.keys(filters).filter(k => filters[k as keyof DadosPrioritariosFilters]).length > 0 && (
+            <div className="mt-4 flex items-center justify-between bg-blue-50 rounded-lg px-4 py-2">
+              <span className="text-sm text-blue-700">
+                {Object.keys(filters).filter(k => filters[k as keyof DadosPrioritariosFilters]).length} filtros ativos
+              </span>
+              <button
+                onClick={() => setFilters({})}
+                className="text-sm text-blue-600 hover:text-blue-800 font-medium"
+              >
+                Limpar filtros
+              </button>
+            </div>
+          )}
         </div>
 
-        {isLoading ? (
-          <div className="p-8">
-            <div className="animate-pulse space-y-4">
-              {[...Array(8)].map((_, i) => (
-                <div key={i} className="h-8 bg-gray-200 rounded"></div>
-              ))}
-            </div>
-          </div>
-        ) : error ? (
-          <div className="p-8 text-center">
-            <div className="text-red-600">
-              <p className="text-lg font-medium">Erro ao carregar dados</p>
-              <p className="text-sm mt-1">{error.message}</p>
-            </div>
-          </div>
-        ) : data?.data?.length ? (
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-300">
-              <thead className="bg-gradient-to-r from-gray-700 to-gray-800">
-                <tr>
-                  <th className="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider border-r border-gray-600">
-                    <div className="flex items-center">
-                      🏠 Programa
-                    </div>
-                  </th>
-                  <th className="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider border-r border-gray-600">
-                    <div className="flex items-center">
-                      📋 Situação do Empreendimento
-                    </div>
-                  </th>
-                  <th className="px-6 py-4 text-center text-xs font-bold text-white uppercase tracking-wider border-r border-gray-600">
-                    <div className="flex items-center justify-center">
-                      📊 Projetos
-                    </div>
-                  </th>
-                  <th className="px-6 py-4 text-center text-xs font-bold text-white uppercase tracking-wider border-r border-gray-600">
-                    <div className="flex items-center justify-center">
-                      🏗️ UH Contratadas
-                    </div>
-                  </th>
-                  <th className="px-6 py-4 text-center text-xs font-bold text-white uppercase tracking-wider border-r border-gray-600">
-                    <div className="flex items-center justify-center">
-                      ✅ UH Entregues
-                    </div>
-                  </th>
-                  <th className="px-6 py-4 text-center text-xs font-bold text-white uppercase tracking-wider border-r border-gray-600">
-                    <div className="flex items-center justify-center">
-                      📈 % Entregues
-                    </div>
-                  </th>
-                  <th className="px-6 py-4 text-center text-xs font-bold text-white uppercase tracking-wider">
-                    <div className="flex items-center justify-center">
-                      ⏳ UH Vigentes
-                    </div>
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {/* Group data by program and add subtotals */}
-                {(() => {
-                  // Group data by program
-                  const groupedData = data.data.reduce((acc: any, row: any) => {
-                    if (!acc[row.programa]) {
-                      acc[row.programa] = {
-                        rows: [],
-                        totals: {
-                          projetos: 0,
-                          uh_contratadas: 0,
-                          uh_entregues: 0,
-                          uh_vigentes: 0
-                        }
-                      }
-                    }
-                    acc[row.programa].rows.push(row)
-                    acc[row.programa].totals.projetos += row.projetos || 0
-                    acc[row.programa].totals.uh_contratadas += row.uh_contratadas || 0
-                    acc[row.programa].totals.uh_entregues += row.uh_entregues || 0
-                    acc[row.programa].totals.uh_vigentes += row.uh_vigentes || 0
-                    return acc
-                  }, {})
-
-                  // Sort programs: FAR, FDS, RURAL
-                  const programOrder = ['FAR', 'FDS', 'RURAL']
-                  const sortedPrograms = programOrder.filter(p => groupedData[p])
-
-                  return sortedPrograms.map((programa: string) => {
-                    const group = groupedData[programa]
-                    const totals = group.totals
-                    const percentual = totals.uh_contratadas > 0 
-                      ? ((totals.uh_entregues / totals.uh_contratadas) * 100).toFixed(1)
-                      : '0'
-
-                    return (
-                      <React.Fragment key={programa}>
-                        {/* Program Subtotal Row */}
-                        <tr className={`${
-                          programa === 'FAR' ? 'bg-gradient-to-r from-green-100 to-green-50 border-l-4 border-green-500' :
-                          programa === 'FDS' ? 'bg-gradient-to-r from-purple-100 to-purple-50 border-l-4 border-purple-500' :
-                          'bg-gradient-to-r from-yellow-100 to-yellow-50 border-l-4 border-yellow-500'
-                        } font-bold text-gray-800 shadow-sm`}>
-                          <td className="px-6 py-5 whitespace-nowrap text-sm border-r border-gray-200">
-                            <div className="flex items-center">
-                              <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${
-                                programa === 'FAR' ? 'bg-green-500 text-white' :
-                                programa === 'FDS' ? 'bg-purple-500 text-white' :
-                                'bg-yellow-500 text-white'
-                              }`}>
-                                {programa === 'FAR' ? '🏗️' : programa === 'FDS' ? '🏘️' : '🌾'} {programa}
-                              </span>
-                            </div>
-                          </td>
-                          <td className="px-6 py-5 whitespace-nowrap text-sm font-semibold border-r border-gray-200">
-                            <span className="text-gray-700">SUBTOTAL {programa}</span>
-                          </td>
-                          <td className="px-6 py-5 whitespace-nowrap text-center text-sm font-bold border-r border-gray-200">
-                            <span className="bg-white px-3 py-1 rounded-lg shadow-sm">
-                              {totals.projetos.toLocaleString('pt-BR')}
-                            </span>
-                          </td>
-                          <td className="px-6 py-5 whitespace-nowrap text-center text-sm font-bold border-r border-gray-200">
-                            <span className="bg-white px-3 py-1 rounded-lg shadow-sm">
-                              {totals.uh_contratadas.toLocaleString('pt-BR')}
-                            </span>
-                          </td>
-                          <td className="px-6 py-5 whitespace-nowrap text-center text-sm font-bold border-r border-gray-200">
-                            <span className="bg-white px-3 py-1 rounded-lg shadow-sm">
-                              {totals.uh_entregues.toLocaleString('pt-BR')}
-                            </span>
-                          </td>
-                          <td className="px-6 py-5 whitespace-nowrap text-center text-sm font-bold border-r border-gray-200">
-                            <span className={`px-3 py-1 rounded-lg font-bold text-white shadow-sm ${
-                              parseFloat(percentual) >= 80 ? 'bg-green-500' :
-                              parseFloat(percentual) >= 50 ? 'bg-yellow-500' :
-                              'bg-red-500'
-                            }`}>
-                              {percentual}%
-                            </span>
-                          </td>
-                          <td className="px-6 py-5 whitespace-nowrap text-center text-sm font-bold">
-                            <span className="bg-white px-3 py-1 rounded-lg shadow-sm">
-                              {totals.uh_vigentes.toLocaleString('pt-BR')}
-                            </span>
-                          </td>
-                        </tr>
-
-                        {/* Detail rows for this program */}
-                        {group.rows.map((row: any, idx: number) => {
-                          // Status color coding based on situacao
-                          const getStatusStyle = (situacao: string) => {
-                            switch (situacao) {
-                              case 'CONCLUÍDO E ENTREGUE':
-                                return 'bg-green-50 text-green-800 border-green-200'
-                              case 'EM ANDAMENTO':
-                                return 'bg-blue-50 text-blue-800 border-blue-200'
-                              case 'PARALISADO':
-                                return 'bg-red-50 text-red-800 border-red-200'
-                              case 'DESIMOBILIZADO':
-                                return 'bg-gray-50 text-gray-800 border-gray-200'
-                              case 'DISTRATADO/CANCELADO':
-                                return 'bg-orange-50 text-orange-800 border-orange-200'
-                              default:
-                                return 'bg-gray-50 text-gray-700 border-gray-200'
-                            }
-                          }
-
-                          return (
-                            <tr key={`${programa}-${idx}`} className="hover:bg-gray-50 transition-colors duration-150 border-b border-gray-100">
-                              <td className="px-6 py-4 whitespace-nowrap border-r border-gray-200">
-                                <div className="w-4 h-4 rounded-full bg-gradient-to-r opacity-30" style={{
-                                  background: programa === 'FAR' ? 'linear-gradient(to right, #10b981, #059669)' :
-                                             programa === 'FDS' ? 'linear-gradient(to right, #8b5cf6, #7c3aed)' :
-                                             'linear-gradient(to right, #f59e0b, #d97706)'
-                                }}></div>
-                              </td>
-                              <td className="px-6 py-4 whitespace-nowrap border-r border-gray-200">
-                                <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium border ${getStatusStyle(row.situacao_empreendimento)}`}>
-                                  {row.situacao_empreendimento}
-                                </span>
-                              </td>
-                              <td className="px-6 py-4 whitespace-nowrap text-center text-sm font-semibold text-gray-900 border-r border-gray-200">
-                                <span className="bg-gray-50 px-2 py-1 rounded">
-                                  {row.projetos?.toLocaleString('pt-BR')}
-                                </span>
-                              </td>
-                              <td className="px-6 py-4 whitespace-nowrap text-center text-sm font-semibold text-gray-900 border-r border-gray-200">
-                                <span className="bg-blue-50 px-2 py-1 rounded text-blue-800">
-                                  {row.uh_contratadas?.toLocaleString('pt-BR')}
-                                </span>
-                              </td>
-                              <td className="px-6 py-4 whitespace-nowrap text-center text-sm font-semibold text-gray-900 border-r border-gray-200">
-                                <span className="bg-green-50 px-2 py-1 rounded text-green-800">
-                                  {row.uh_entregues?.toLocaleString('pt-BR')}
-                                </span>
-                              </td>
-                              <td className="px-6 py-4 whitespace-nowrap text-center text-sm border-r border-gray-200">
-                                <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold text-white ${
-                                  row.percentual_entregues >= 80 ? 'bg-green-500' :
-                                  row.percentual_entregues >= 50 ? 'bg-yellow-500' :
-                                  'bg-red-500'
-                                }`}>
-                                  {row.percentual_entregues}%
-                                </span>
-                              </td>
-                              <td className="px-6 py-4 whitespace-nowrap text-center text-sm font-semibold text-gray-900">
-                                <span className="bg-orange-50 px-2 py-1 rounded text-orange-800">
-                                  {row.uh_vigentes?.toLocaleString('pt-BR')}
-                                </span>
-                              </td>
-                            </tr>
-                          )
-                        })}
-                      </React.Fragment>
-                    )
-                  })
-                })()}
-              </tbody>
-            </table>
-          </div>
-        ) : (
-          <div className="p-8 text-center text-gray-500">
-            <p className="text-lg">Nenhum dado encontrado</p>
-            <p className="text-sm mt-1">Tente ajustar os filtros</p>
-          </div>
-        )}
-
-        {/* Summary Footer */}
-        {data?.summary && (
-          <div className="bg-gradient-to-r from-gray-800 to-gray-900 px-6 py-6 border-t border-gray-300">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center">
-                <span className="text-lg font-bold text-white flex items-center">
-                  📊 TOTAIS GERAIS
-                </span>
-              </div>
-              <div className="grid grid-cols-5 gap-6">
-                <div className="text-center">
-                  <div className="text-xs text-gray-300 uppercase tracking-wider">Projetos</div>
-                  <div className="text-lg font-bold text-white">
-                    {data.summary.total_projetos?.toLocaleString('pt-BR')}
-                  </div>
-                </div>
-                <div className="text-center">
-                  <div className="text-xs text-gray-300 uppercase tracking-wider">UH Contratadas</div>
-                  <div className="text-lg font-bold text-blue-300">
-                    {data.summary.total_uh_contratadas?.toLocaleString('pt-BR')}
-                  </div>
-                </div>
-                <div className="text-center">
-                  <div className="text-xs text-gray-300 uppercase tracking-wider">UH Entregues</div>
-                  <div className="text-lg font-bold text-green-300">
-                    {data.summary.total_uh_entregues?.toLocaleString('pt-BR')}
-                  </div>
-                </div>
-                <div className="text-center">
-                  <div className="text-xs text-gray-300 uppercase tracking-wider">% Entregues</div>
-                  <div className={`text-lg font-bold ${
-                    data.summary.overall_percentual_entregues >= 80 ? 'text-green-300' :
-                    data.summary.overall_percentual_entregues >= 50 ? 'text-yellow-300' :
-                    'text-red-300'
-                  }`}>
-                    {data.summary.overall_percentual_entregues}%
-                  </div>
-                </div>
-                <div className="text-center">
-                  <div className="text-xs text-gray-300 uppercase tracking-wider">UH Vigentes</div>
-                  <div className="text-lg font-bold text-orange-300">
-                    {data.summary.total_uh_vigentes?.toLocaleString('pt-BR')}
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
+      {/* Tab Content */}
+      {activeTab === 'todos-os-dados' && (
+        <TodosOsDadosTab 
+          data={data} 
+          isLoading={isLoading} 
+          error={error} 
+          isFetching={isFetching} 
+        />
+      )}
+      
+      {activeTab === 'estado-atual' && (
+        <EstadoAtualTab 
+          data={estadoAtualData} 
+          isLoading={estadoAtualLoading} 
+          error={estadoAtualError} 
+          isFetching={false} 
+        />
+      )}
+      
+      {activeTab === 'previsao-entrega' && (
+        <PrevisaoEntregaTab 
+          data={previsaoData} 
+          isLoading={previsaoLoading} 
+        />
+      )}
     </div>
   )
 }

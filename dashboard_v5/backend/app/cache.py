@@ -9,7 +9,8 @@ import structlog
 from typing import Any, Optional, Dict, List
 import time
 import hashlib
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
+from decimal import Decimal
 
 from .config import settings
 
@@ -303,9 +304,13 @@ class CacheManager:
         return f"{prefix}:{key}"
     
     def _json_serializer(self, obj):
-        """Custom JSON serializer for datetime and other objects"""
+        """Custom JSON serializer for datetime, date, Decimal and other objects"""
         if isinstance(obj, datetime):
             return obj.isoformat()
+        elif isinstance(obj, date):
+            return obj.isoformat()
+        elif isinstance(obj, Decimal):
+            return float(obj)
         raise TypeError(f"Object of type {type(obj)} is not JSON serializable")
     
     async def close(self):

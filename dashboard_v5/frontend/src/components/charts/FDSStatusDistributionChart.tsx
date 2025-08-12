@@ -6,6 +6,7 @@
 import { useMemo } from 'react'
 import { ResponsiveContainer, PieChart, Pie, Tooltip, Legend } from 'recharts'
 import { useFDSStatusDonutChart } from '../../api/hooks'
+import { getStatusColor } from '../../constants/statusColors'
 
 interface FDSStatusDistributionChartProps {
   filters?: {
@@ -16,9 +17,6 @@ interface FDSStatusDistributionChartProps {
   }
 }
 
-// Simple colors array
-const STATUS_COLORS = ['#009688', '#00796B', '#4DB6AC', '#26A69A', '#80CBC4']
-
 export default function FDSStatusDistributionChart({ filters }: FDSStatusDistributionChartProps) {
   // Hook called unconditionally at top
   const { data, isLoading, error } = useFDSStatusDonutChart(filters)
@@ -27,10 +25,10 @@ export default function FDSStatusDistributionChart({ filters }: FDSStatusDistrib
   const chartData = useMemo(() => {
     if (!data?.data?.length) return []
     
-    return data.data.map((item: any, index: number) => ({
+    return data.data.map((item: any) => ({
       name: item.status || 'Sem Status',
       value: Number(item.total_uh) || 0,
-      fill: STATUS_COLORS[index % STATUS_COLORS.length]
+      fill: getStatusColor(item.status || 'Sem Status')
     }))
   }, [data])
 

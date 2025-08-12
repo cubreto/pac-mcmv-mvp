@@ -259,7 +259,7 @@ export function PerformanceMetrics({ apiResponseTime = 45, dataFreshness = 'Temp
             rel="noopener noreferrer"
             className="inline-flex items-center px-4 py-2 border border-blue-300 rounded-md text-sm font-medium text-blue-700 bg-white hover:bg-blue-50 transition-colors"
           >
-            🔄 Compare ao vivo com v4 Dashboard →
+            🔄 Compare ao vivo com v4 →
           </a>
         </div>
       </div>

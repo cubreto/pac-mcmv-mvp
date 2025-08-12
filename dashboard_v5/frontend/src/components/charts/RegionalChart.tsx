@@ -6,6 +6,7 @@
 
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts'
 import { RegionalData } from '../../api/client'
+import { formatCurrencyDashboard } from '../../utils/formatters'
 
 interface RegionalChartProps {
   data: RegionalData[]
@@ -132,73 +133,126 @@ export function RegionalChart({ data, type }: RegionalChartProps) {
     )
   }
 
+  // Calculate totals for summary
+  const totals = formattedData.reduce((acc, curr) => ({
+    projetos: acc.projetos + (curr.total_projetos || 0),
+    uh: acc.uh + (curr.total_uh || 0),
+    trabalho_social: acc.trabalho_social + (curr.trabalho_social || 0),
+    contrapartida: acc.contrapartida + (curr.contrapartida || 0),
+    investimento: acc.investimento + (curr.total_investimento || 0)
+  }), { projetos: 0, uh: 0, trabalho_social: 0, contrapartida: 0, investimento: 0 })
+
   // Mixed view with table and charts
   return (
     <div className="space-y-8">
-      {/* Regional Summary Table - Make it prominent */}
-      <div className="bg-blue-50 rounded-lg shadow-lg border-2 border-blue-200 p-6">
-        <h3 className="text-xl font-bold text-blue-900 mb-6 border-b border-blue-300 pb-4">
-          📊 Resumo Financeiro por Região ({formattedData.length} regiões)
-        </h3>
-        <div className="overflow-x-auto bg-white rounded-lg p-4">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
+      {/* Regional Summary Table - Dados Prioritários Style */}
+      <div className="bg-white rounded-lg shadow-lg border border-gray-200">
+        <div className="px-6 py-5 border-b border-gray-200 bg-gradient-to-r from-gray-50 to-gray-100">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-xl font-bold text-gray-900">
+                Resumo Financeiro
+              </h3>
+              <p className="text-sm text-gray-600 mt-1">
+                Análise regional dos programas MCMV
+              </p>
+            </div>
+            <div className="text-right">
+              <div className="text-sm text-gray-500">Total Geral</div>
+              <div className="text-lg font-bold text-gray-900">
+                {totals.projetos.toLocaleString('pt-BR')} projetos
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-gray-300">
+            <thead className="bg-gradient-to-r from-gray-700 to-gray-800">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider border-r border-gray-600">
                   Região
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-4 text-center text-xs font-bold text-white uppercase tracking-wider border-r border-gray-600">
                   Projetos
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-4 text-center text-xs font-bold text-white uppercase tracking-wider border-r border-gray-600">
                   UH Contratadas
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Contratado (R$)
+                <th className="px-6 py-4 text-center text-xs font-bold text-white uppercase tracking-wider border-r border-gray-600">
+                  Trabalho Social
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Trabalho Social (R$)
+                <th className="px-6 py-4 text-center text-xs font-bold text-white uppercase tracking-wider border-r border-gray-600">
+                  Contrapartida
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Contrapartida (R$)
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Investimento (R$)
+                <th className="px-6 py-4 text-center text-xs font-bold text-white uppercase tracking-wider">
+                  Investimento
                 </th>
               </tr>
             </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
+            <tbody className="bg-white divide-y divide-gray-100">
               {formattedData.map((row, index) => (
-                <tr key={index} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 whitespace-nowrap">
+                <tr key={index} className="hover:bg-gray-50 transition-colors duration-150">
+                  <td className="px-6 py-4 whitespace-nowrap border-r border-gray-200">
                     <div className="flex items-center">
                       <div 
-                        className="w-3 h-3 rounded-full mr-2"
+                        className="w-3 h-3 rounded-full mr-3"
                         style={{ backgroundColor: COLORS[row.regiao as keyof typeof COLORS] || COLORS.default }}
                       ></div>
                       <span className="text-sm font-medium text-gray-900">{row.regiao}</span>
                     </div>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                  <td className="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-900 border-r border-gray-200">
                     {formatNumber(row.total_projetos)}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                  <td className="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-900 border-r border-gray-200">
                     {formatNumber(row.total_uh)}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {formatCurrency(row.total_contratado)}
+                  <td className="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-900 border-r border-gray-200">
+                    {formatCurrencyDashboard(row.trabalho_social || 0)}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {formatCurrency(row.trabalho_social || 0)}
+                  <td className="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-900 border-r border-gray-200">
+                    {formatCurrencyDashboard(row.contrapartida || 0)}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {formatCurrency(row.contrapartida || 0)}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {formatCurrency(row.total_investimento)}
+                  <td className="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-900">
+                    {formatCurrencyDashboard(row.total_investimento)}
                   </td>
                 </tr>
               ))}
+              
+              {/* Totals Row */}
+              <tr className="bg-gradient-to-r from-blue-100 to-blue-50 border-t-2 border-blue-300 font-bold text-gray-800">
+                <td className="px-6 py-5 whitespace-nowrap text-sm font-bold border-r border-gray-200">
+                  <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-blue-500 text-white">
+                    📊 TOTAL GERAL
+                  </span>
+                </td>
+                <td className="px-6 py-5 whitespace-nowrap text-center text-sm font-bold border-r border-gray-200">
+                  <span className="bg-white px-3 py-1 rounded-lg shadow-sm">
+                    {totals.projetos.toLocaleString('pt-BR')}
+                  </span>
+                </td>
+                <td className="px-6 py-5 whitespace-nowrap text-center text-sm font-bold border-r border-gray-200">
+                  <span className="bg-white px-3 py-1 rounded-lg shadow-sm">
+                    {totals.uh.toLocaleString('pt-BR')}
+                  </span>
+                </td>
+                <td className="px-6 py-5 whitespace-nowrap text-center text-sm font-bold border-r border-gray-200">
+                  <span className="bg-white px-3 py-1 rounded-lg shadow-sm">
+                    {formatCurrencyDashboard(totals.trabalho_social)}
+                  </span>
+                </td>
+                <td className="px-6 py-5 whitespace-nowrap text-center text-sm font-bold border-r border-gray-200">
+                  <span className="bg-white px-3 py-1 rounded-lg shadow-sm">
+                    {formatCurrencyDashboard(totals.contrapartida)}
+                  </span>
+                </td>
+                <td className="px-6 py-5 whitespace-nowrap text-center text-sm font-bold">
+                  <span className="bg-white px-3 py-1 rounded-lg shadow-sm">
+                    {formatCurrencyDashboard(totals.investimento)}
+                  </span>
+                </td>
+              </tr>
             </tbody>
           </table>
         </div>
@@ -209,7 +263,7 @@ export function RegionalChart({ data, type }: RegionalChartProps) {
         {/* Projects by Region - Pie Chart */}
         <div className="bg-white rounded-lg shadow p-4">
           <h4 className="text-lg font-medium text-gray-900 mb-4">
-            📊 Projetos por Região
+            Projetos por Região
           </h4>
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
@@ -243,7 +297,7 @@ export function RegionalChart({ data, type }: RegionalChartProps) {
         {/* Investment by Region - Bar Chart */}
         <div className="bg-white rounded-lg shadow p-4">
           <h4 className="text-lg font-medium text-gray-900 mb-4">
-            💰 Investimento por Região
+            Investimento por Região
           </h4>
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">

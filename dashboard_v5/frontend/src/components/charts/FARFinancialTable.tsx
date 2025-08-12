@@ -5,6 +5,7 @@
 
 import { useMemo, useState, useCallback } from 'react'
 import { useFARFinancialTable } from '../../api/hooks'
+import { formatCurrencyDashboard, formatCurrencyMunicipal } from '../../utils/formatters'
 
 interface FARFinancialTableProps {
   filters?: {
@@ -143,7 +144,7 @@ export default function FARFinancialTable({ filters }: FARFinancialTableProps) {
                   </div>
                   <div className="text-center">
                     <div className="font-medium text-gray-900">
-                      R$ {(stateGroup.totals.investment / 1e9).toFixed(1)}B
+                      {formatCurrencyDashboard(stateGroup.totals.investment)}
                     </div>
                     <div className="text-gray-500">Investimento</div>
                   </div>
@@ -195,7 +196,7 @@ export default function FARFinancialTable({ filters }: FARFinancialTableProps) {
                               {row.total_uh_contratadas?.toLocaleString('pt-BR')}
                             </td>
                             <td className="px-4 py-2 text-sm text-gray-600">
-                              R$ {(row.total_investimento / 1e6)?.toFixed(1)}M
+                              {formatCurrencyMunicipal(row.total_investimento)}
                             </td>
                             <td className="px-4 py-2 text-sm text-gray-600">
                               R$ {row.investimento_medio_uh?.toLocaleString('pt-BR')}

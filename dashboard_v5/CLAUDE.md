@@ -237,5 +237,272 @@ docker exec mcmv-v5-redis redis-cli ping  # Redis
 **Reference Document**: `/home/ec2-user/pac-mcmv-mvp/DATABASE_CONNECTION_GUIDE.md`
 
 ---
-**Last Updated**: 2025-07-09
+
+## 📊 DATA QUALITY AND UI FIXES (2025-07-16)
+
+### Critical Field Mappings
+
+**Dados Prioritários - UH Fields**:
+- **Issue**: `uh_contratadas` field contains mostly zeros (only 21 records with values)
+- **Solution**: Always use `uh_original_contratadas` for calculations
+- **Impact**: Fixed delivery rate showing 20,726.85% instead of correct 83.82%
+
+**RURAL Investment Calculation**:
+- **Issue**: SQL using `COALESCE(vr_terreno, 0) + COALESCE(vr_ts, 0)` was 66.7x smaller
+- **Solution**: Use `vr_total_investimento` field directly
+- **Validation**: RURAL investments now show correctly (e.g., 7,500M instead of 113M)
+
+### Date Field Clarifications
+
+**Construction vs Delivery Dates**:
+- **Field Used**: `dt_previsao_conclusao_obra` (construction completion)
+- **Not Available**: `DT_PREVISAO_ENTREGA_DO_EMPREENDIMENTO` (delivery date)
+- **UI Labels**: Changed from "Previsão de Entregas" to "Previsão de Conclusão de Obras"
+- **Impact**: Aligns user expectations with available data
+
+### Currency Formatting Standards
+
+**formatCurrencyDashboard** (for KPI cards):
+```typescript
+- Values >= 1 billion: "R$ 24.7 bi"
+- Values >= 1 million: "R$ 150.5M"
+- Values >= 1 thousand: "R$ 850 mil"
+- Values < 1 thousand: "R$ 250"
+```
+
+**formatCurrencyTable** (for data tables):
+```typescript
+- Values >= 1 million: "R$ 3.5M"
+- Values >= 1 thousand: "R$ 750 mil"
+- Values < 1 thousand: "R$ 500"
+```
+
+### UI Design Standards (v5.0.7)
+
+**Clean Minimal Design**:
+- **Icons**: Navigation menu keeps program icons (🌾 RURAL, 🏗️ FAR, 🏘️ FDS)
+- **Other Icons**: Removed from section headers, charts, and content areas
+- **Card Design**: White background with colored left border (4px)
+- **Card Padding**: Reduced from p-6 to p-4 for compact display
+- **Border Colors**: 
+  - Blue (border-blue-500): Primary metrics
+  - Green (border-green-500): Success metrics
+  - Purple (border-purple-500): Percentage/rate metrics
+  - Orange (border-orange-500): Count metrics
+
+**Table Design**:
+- **Headers**: Dark gradient background (from-gray-700 to-gray-800)
+- **Text**: White bold uppercase headers
+- **Rows**: Alternating white/gray-50 backgrounds
+- **Status Pills**: Colored backgrounds with matching text
+
+### Common Troubleshooting
+
+**Cache Issues**:
+```bash
+# Clear Redis cache when data seems incorrect
+docker exec mcmv-v5-redis redis-cli FLUSHALL
+```
+
+**API Base Path**:
+- **Correct**: `/api/v5/dados-prioritarios`
+- **Incorrect**: `/api/v1/dados-prioritarios`
+
+**Container Health Checks**:
+```bash
+# Quick health check
+curl http://localhost:8001/api/v5/health
+curl http://localhost:8504/health
+```
+
+---
+
+## 📊 DADOS PRIORITÁRIOS - TABLE IMPROVEMENTS (2025-07-18)
+
+### Monthly Snapshot Handling
+
+**Issue**: Todos os Dados table showed repeated rows without month/year indication
+**Solution**: Implemented collapsible rows grouped by Programa → Situação → Month/Year
+
+**Key Features**:
+- Expandable/collapsible row groups with expand/collapse icons
+- Month/Year extracted from `data_movimento` field
+- Added columns: Valor Contratado, Valor Desembolsado
+- Clean presentation without debugging text
+
+### Estado Atual Tab Separation
+
+**Implementation**:
+- Separate API endpoint: `/api/v5/dados-prioritarios/estado-atual`
+- Shows only May 2025 snapshot (latest data)
+- Hides Ano/Mês de Movimento filters when Estado Atual tab is active
+- Header indicates "Snapshot de Maio/2025"
+
+**Grouping Order**:
+- Changed from Situação/Modalidade to Programa/Situação
+- Matches the structure of Todos os Dados tab
+
+---
+
+## 🎯 FILTER FIXES AND UI UPDATES (2025-07-18)
+
+### Delivery Forecast Filter Fix
+
+**Issue**: 500 error - "column sg_regiao does not exist" in projetos table
+**Solution**: Implemented region-to-state mapping since projetos only has sg_uf
+
+```python
+region_states = {
+    'Norte': ['AC', 'AP', 'AM', 'PA', 'RO', 'RR', 'TO'],
+    'Nordeste': ['AL', 'BA', 'CE', 'MA', 'PB', 'PE', 'PI', 'RN', 'SE'],
+    'Centro-Oeste': ['DF', 'GO', 'MT', 'MS'],
+    'Sudeste': ['ES', 'MG', 'RJ', 'SP'],
+    'Sul': ['PR', 'RS', 'SC']
+}
+```
+
+### Program Page Layout Reordering
+
+**New Order**:
+1. Program Banner (with full program name)
+2. Global Filters
+3. Tab Content
+
+**Program Names Updated**:
+- **FDS** - Fundo de Desenvolvimento Social
+- **FAR** - Fundo de Arrendamento Residencial
+- **RURAL** - Programa Nacional de Habitação Rural
+
+### UI Cleanups
+
+**Removed**:
+- Blue banner from Resumo page
+- Icons from Previsão de Conclusão cards
+- Icons from section headers in program pages
+- Icons from tab labels in program pages
+
+**Applied**:
+- Clean white cards with colored left ribbon design
+- Consistent formatting across all pages
+
+---
+
+## 📊 DADOS PRIORITÁRIOS - CRITICAL ISSUES AND FIXES (2025-07-31)
+
+### Issue 1: Dados Históricos Only Showing Latest Snapshot
+
+**Problem**: 
+- The "Dados Históricos" tab was showing only 13,656 unique projects instead of ~66,000 historical records
+- This was caused by using GROUP BY in the SQL query which aggregated data instead of returning individual records
+
+**Root Cause**: 
+- The query was grouping by programa/situacao/data_movimento, creating summaries instead of showing all historical data
+- ETL process is correct (database has 66,130 records), but the API endpoint was aggregating them
+
+**Solution**:
+```sql
+-- Changed from GROUP BY query to individual records:
+SELECT apf, modalidade, situacao_empreendimento, data_movimento, ...
+FROM mcmv_v2.dados_prioritarios
+ORDER BY data_movimento DESC, programa, situacao_empreendimento, apf
+```
+
+**Fix Applied**: Modified `/dashboard_v5/backend/app/main.py` get_dados_prioritarios endpoint
+
+### Issue 2: Frontend Showing 0 Projects in Table
+
+**Problem**: 
+- After fixing the backend to return individual records, the frontend showed 0 in the "Projetos" column
+- The frontend was expecting pre-aggregated data with a "projetos" field
+
+**Root Cause**:
+- Frontend was looking for `item.projetos` (aggregated count) but receiving individual records with `item.apf`
+- Need to count unique APF values instead of using pre-calculated counts
+
+**Solution**:
+- Modified TodosOsDadosTab component to:
+  - Count unique projects using `new Set(situacaoData.monthlyData.map(item => item.apf))`
+  - Sum UH and financial values from the latest month for each unique project
+  - Display correct totals in all columns
+
+**Fix Applied**: Modified `/dashboard_v5/frontend/src/components/TodosOsDadosTab.tsx`
+
+### Issue 3: KPI Cards Showing on Wrong Tabs
+
+**Problem**:
+- KPI cards (Total Projetos, UH Contratadas, Taxa de Entrega) were showing on all tabs
+- Should only appear on "Estado Atual" tab
+
+**Solution**:
+- Modified condition from `(activeTab === 'estado-atual' || activeTab === 'previsao-entrega')` to just `activeTab === 'estado-atual'`
+
+**Fix Applied**: Modified `/dashboard_v5/frontend/src/pages/DadosPrioritariosPage.tsx`
+
+### Important Notes for Future ETL
+
+1. **Data Structure**: 
+   - Dados Prioritários contains monthly snapshots (same project appears multiple times)
+   - Always preserve all historical records during ETL
+   - Use DISTINCT ON (apf) only for summaries, not for historical views
+
+2. **Frontend Handling**:
+   - When backend returns individual records, frontend must aggregate for display
+   - Count unique projects, don't expect pre-aggregated counts
+   - Always use latest month's data for totals per project
+
+3. **Testing After ETL**:
+   - Verify total record count: ~66k for 5 months of data
+   - Check unique project count: ~13.6k unique APFs
+   - Ensure historical progression is preserved
+
+---
+
+## 🔧 RURAL FILTERS IMPLEMENTATION (2025-07-31)
+
+### New Filters Added
+- **tipo**: RURAL, RURAL-CALAMIDADES
+- **modalidade_proposta**: Produção Habitacional, Melhoria Habitacional
+
+### Implementation Details
+1. **Database**: Added columns to mcmv_v2.projetos with partial indexes
+2. **ETL**: Loaded data from Excel file, handled NaN values
+3. **API**: Updated all RURAL endpoints to accept new filters
+4. **Frontend**: Created RuralFilters component
+5. **KPIs Fix**: Updated KPIs endpoint to accept tipo/modalidade_proposta filters
+
+### Known Issues Fixed
+- KPIs not filtering: Added tipo and modalidade_proposta to get_kpi_data method
+- NULL modalidade: Fixed 1 record with missing modalidade_proposta
+- Filter counts: Modalidade shows total across all tipos (correct behavior)
+
+---
+
+## 🚀 PERFORMANCE OPTIMIZATIONS (2025-07-31)
+
+### Dados Prioritários Historical Data Performance
+
+**Issue**: Dados Prioritários históricos (66,000+ records) was loading slowly
+**Root Cause**: No database indexes on the dados_prioritarios table
+
+**Solution Applied**: Created 6 strategic indexes
+```sql
+idx_dados_prioritarios_filters     -- (data_movimento DESC, modalidade, situacao_empreendimento)
+idx_dados_prioritarios_dates       -- (data_movimento DESC, data_contratacao)
+idx_dados_prioritarios_uf          -- (sg_uf)
+idx_dados_prioritarios_apf         -- (apf)
+idx_dados_prioritarios_composite   -- (data_movimento DESC, modalidade, situacao_empreendimento, sg_uf)
+idx_dados_prioritarios_year_month  -- (EXTRACT(year), EXTRACT(month))
+```
+
+**Result**: Significantly faster query performance + Redis caching for repeated queries
+
+### Empty Data Handling
+
+**Issue**: 500 errors when filters returned no data (e.g., PARALISADO in 2025)
+**Root Cause**: `float(None)` conversion error in summary calculations
+**Solution**: Added proper None handling with `or 0` fallbacks
+**Result**: Shows "Nenhum dado encontrado" message instead of errors
+
+---
+**Last Updated**: 2025-07-31
 **Importance**: CRITICAL - Prevents development conflicts and data loss
